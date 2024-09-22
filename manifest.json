@@ -1,0 +1,9 @@
+{
+  "id": "Vault Scripts",
+  "name": "Vault Scripts",
+  "version": "0.0.0",
+  "minAppVersion": "1.6.7",
+  "description": "Scripts for my Obsidian setup.",
+  "isDesktopOnly": false,
+  "author": "Vault"
+}
