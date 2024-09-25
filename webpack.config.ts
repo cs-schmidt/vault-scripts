@@ -1,15 +1,18 @@
+import 'dotenv/config';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import CopyPlugin from 'copy-webpack-plugin';
 import { type Configuration } from 'webpack';
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
+const buildDir = process.env['BUILD_DIR'] as string;
 
 const webpackConfig: Configuration = {
   mode: 'production',
   context: projectRoot,
   entry: './src/main.ts',
   output: {
-    path: `${projectRoot}/build/`,
+    path: buildDir,
     library: {
       type: 'commonjs',
     },
@@ -29,6 +32,7 @@ const webpackConfig: Configuration = {
     ],
   },
   externals: ['obsidian'],
+  plugins: [new CopyPlugin({ patterns: [{ from: 'manifest.json' }] })],
 };
 
 export default webpackConfig;
