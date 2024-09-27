@@ -4,14 +4,14 @@ import { getAPI } from 'obsidian-dataview';
 /**
  * Requests an open title for the template from the user (see specification note).
  * @param {Object} tp - The Templater object.
- * @param {boolean} stripSlashes - If slashes should be stripped or not.
+ * @param {boolean} swapSlashes - If slashes should be swapped to hyphens.
  * @returns {string}
  * @throws {Error} The title doesn't match OPEN_TITLE_REGEX or equals 'Untitled'.
  */
-export async function requestOpenTitle(tp, stripSlashes = false) {
+export async function requestOpenTitle(tp, swapSlashes = false) {
   const title = (await tp.system.prompt('Open Title:', '', true)).trim();
   if (!isOpenTitle(title)) throw Error('Creation Error: Invalid open title.');
-  if (stripSlashes) return title.replaceAll(/[\/\\]/g, '-');
+  if (swapSlashes) return swapSlashes(title, '-');
   return title;
 }
 
@@ -66,6 +66,16 @@ export function isPathTitle(title) {
  */
 export function grabCitationKey(title) {
   return title.match(`^${CITATION_KEY_MATCH}`) || '';
+}
+
+/**
+ * Replace all slashes in `title` to `str`.
+ * @param {string} title
+ * @param {string} str
+ * @returns {string}
+ */
+export function swapSlashes(title, str) {
+  return title.replaceAll(/[\/\\]/g, str);
 }
 
 /**
