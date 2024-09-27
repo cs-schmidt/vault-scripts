@@ -1,11 +1,9 @@
-/** The Templater user script used by the inquiry template to instantiate inquiries. */
-
 import {
-  CITATION_KEY_MATCH,
-  PATH_TITLE_REGEX,
-  OPEN_TITLE_REGEX,
-} from '../utils/constants.js';
-import isUniqueFilename from '../utils/isUniqueFilename.js';
+  isOpenTitle,
+  isPathTitle,
+  isUniqueFilename,
+  grabCitationKey,
+} from '../utils/templates.js';
 
 // NOTE: Files created in Obsidian are always named "Untitled" initially.
 // NOTE: When "Show inline title" and "Show tab title bar" are toggled off you'll get an
@@ -20,11 +18,10 @@ import isUniqueFilename from '../utils/isUniqueFilename.js';
 export default async function initializeInquiry(tp) {
   const title = (await isCitableSource(tp))
     ? await requestPathTitle(tp)
-    : await requestOpenTitle(tp);
-  const citationKey = title.match(`^${CITATION_KEY_MATCH}`) || '';
+    : await requestOpenTitle(tp, true);
   if (!isUniqueFilename(title)) throw Error('Creation Error: Title is not unique.');
   await tp.file.rename(title);
-  return Object.freeze({ title, citationKey });
+  return { title, citationKey: grabCitationKey(title) };
 }
 
 /**
@@ -45,26 +42,24 @@ async function isCitableSource(tp) {
  * Requests a path title for the inquiry from the user (see specification note).
  * @param {Object} tp - The Templater object.
  * @returns {string}
- * @throws {Error} When the submitted path title is invalid.
+ * @throws {Error} The title doesn't match PATH_TITLE_REGEX or equals 'Untitled'.
  */
 async function requestPathTitle(tp) {
-  const result = (await tp.system.prompt('Path Title:', '', true)).trim();
-  if (!PATH_TITLE_REGEX.test(result) || result === 'Untitled')
-    throw Error('Creation Error: Invalid path title.');
-  return result;
+  const title = (await tp.system.prompt('Path Title:', '', true)).trim();
+  if (!isPathTitle(title)) throw Error('Creation Error: Invalid path title format.');
+  return title;
 }
 
 /**
  * Requests an open title for the inquiry from the user (see specification note).
  * @param {Object} tp - The Templater object.
+ * @param {boolean} stripSlashes - If slashes should be stripped or not.
  * @returns {string}
- * @throws {Error} When the title submitted is invalid.
+ * @throws {Error} The title doesn't match OPEN_TITLE_REGEX or equals 'Untitled'.
  */
-async function requestOpenTitle(tp) {
-  const result = (await tp.system.prompt('Open Title:', '', true))
-    .trim()
-    .replaceAll(/[\/\\]/g, '-');
-  if (!OPEN_TITLE_REGEX.test(result) || result === 'Untitled')
-    throw Error('Creation Error: Invalid open title.');
-  return result;
+async function requestOpenTitle(tp, stripSlashes = false) {
+  const title = (await tp.system.prompt('Open Title:', '', true)).trim();
+  if (!isOpenTitle(title)) throw Error('Creation Error: Invalid open title format.');
+  if (stripSlashes) return title.replaceAll(/[\/\\]/g, '-');
+  return title;
 }

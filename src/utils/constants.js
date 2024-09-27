@@ -1,13 +1,4 @@
-export const CITATION_KEY_MATCH = '[a-z]+(?:[A-Z][a-z]*)*(?:\\d{4})?';
-
-export const PATH_TITLE_REGEX = (() => {
-  const nonHeadingMatch = '[a-z]{2,3}(?:\\d{1,4}(?:\\.\\d{1,4})*)?';
-  const headingMatch = '[a-z]+(?:-?[a-z]+)*\\.?(?: [a-z]+(?:-?[a-z]+)*\\.?)*';
-  return new RegExp(
-    `^${CITATION_KEY_MATCH}(?: > ${nonHeadingMatch})*(?: > ${headingMatch})?$`
-  );
-})();
-
+/** Regex that matches OPEN_TITLE format (see specification). */
 export const OPEN_TITLE_REGEX = (() => {
   const affixMatches = [
     "(?:\\.?[\\p{L}\\d]+(?:[-–/\\\\][\\p{L}\\d]+)*)+(?:(?:'[\\p{L}]+){0,2}|\\.?)",
@@ -26,4 +17,16 @@ export const OPEN_TITLE_REGEX = (() => {
     `<${wordMatch}>`,
   ].join('|')})`;
   return new RegExp(`^${phraseMatch}(?: ${phraseMatch})*$`, 'ui');
+})();
+
+/** Regex pattern string that matches a citation key. */
+export const CITATION_KEY_MATCH = '[a-z]+(?:[A-Z][a-z]*)*(?:\\d{4})?';
+
+/** Regex that matches PATH_TITLE format (see specification). */
+export const PATH_TITLE_REGEX = (() => {
+  const nonHeadingMatch = '[a-z]{2,3}(?:\\d{1,4}(?:\\.\\d{1,4})*)?';
+  const headingMatch = '[a-z]+(?:-?[a-z]+)*\\.?(?: [a-z]+(?:-?[a-z]+)*\\.?)*';
+  return new RegExp(
+    `^${CITATION_KEY_MATCH}(?: > ${nonHeadingMatch})*(?: > ${headingMatch})?$`
+  );
 })();
