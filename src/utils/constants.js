@@ -1,32 +1,54 @@
-/** Regex that matches OPEN_TITLE format (see specification). */
+// NOTE: `SOURCE_KEY_REGEX` must match Better Bibtex citation key format in Zotero or "*":
+//       - Bibtex Format: auth.lower + "_" + shorttitle(3,3) + "_" + (year || N.D.)
+//       - Furthermore, make sure the citation key format in Zotero does not overlap with
+//         the date code prefix on log entries.
+
+/** Matches strings are in SOURCE_KEY format. */
+export const SOURCE_KEY_REGEX =
+  /^[a-z]+(?:_(?:(?:[A-Z]|\d)+[a-z\d]*)+)?_(?:\d{4}|N\.D\.)$/;
+
+/**  */
+export const SOURCE_KEY_PARSE_REGEX = new RegExp(
+  `^\\{(${SOURCE_KEY_REGEX.source.replace(/(?:^\^|\$$)/g, '')})\\}`
+);
+
+/** Matches strings in FORMAL_ID format (see specification). */
+export const FORMAL_ID_REGEX = /^[A-Z]{2,4}$/;
+
+/** Matches strings that are in OPEN_TITLE format. */
 export const OPEN_TITLE_REGEX = (() => {
-  const affixMatches = [
-    "(?:\\.?[\\p{L}\\d]+(?:[-–/\\\\][\\p{L}\\d]+)*)+(?:(?:'[\\p{L}]+){0,2}|\\.?)",
-    "'[\\p{L}]+(?:'[\\p{L}]+){0,2}",
-    "[\\p{L}]'",
-  ];
-  const centerMatch = `${affixMatches.join('|')}|'[\\p{L}]'`;
+  // Matches alphanumeric strings that may have periods and be possessive or contractive.
+  const alphanumDotsAposMatch = "[\\p{L}\\d]+(?:\\.[\\p{L}\\d]+)*(?:'\\p{L}+){0,2}";
+  // Matches alphanumeric strings that are in a period and may have them in other spots.
+  const alphanumDotEndedMatch = '[\\p{L}\\d]+(?:\\.[\\p{L}\\d]+)*\\.';
   const wordMatch = [
-    `(?:${affixMatches.join('|')})`,
-    `(?:(?:[-–]${centerMatch})*(?:[-–]${affixMatches.join('|')}))?`,
+    `${alphanumDotsAposMatch}`,
+    `(?:-${alphanumDotsAposMatch})*`,
+    `(?:-${alphanumDotEndedMatch})?`,
   ].join('');
   const phraseMatch = `(?:${[
-    wordMatch,
-    `"(?:${wordMatch}|\\(${wordMatch}\\))(?: (?:${wordMatch}|\\(${wordMatch}\\)))"`,
-    `\\((?:${wordMatch}|"${wordMatch}")(?: (?:${wordMatch}|"${wordMatch}"))*\\)`,
-    `<${wordMatch}>`,
+    `${wordMatch}`,
+    `"${wordMatch}(?: ${wordMatch})*"`,
+    `<${wordMatch}(?: ${wordMatch})*>`,
+    `\\(${wordMatch}(?: ${wordMatch})*\\)`,
   ].join('|')})`;
   return new RegExp(`^${phraseMatch}(?: ${phraseMatch})*$`, 'ui');
 })();
 
-/** Regex pattern string that matches a citation key. */
-export const CITATION_KEY_MATCH = '[a-z]+(?:[A-Z][a-z]*)*(?:\\d{4})?';
-
-/** Regex that matches PATH_TITLE format (see specification). */
+/** Matches strings that are in PATH_TITLE format. */
 export const PATH_TITLE_REGEX = (() => {
-  const nonHeadingMatch = '[a-z]{2,3}(?:\\d{1,4}(?:\\.\\d{1,4})*)?';
-  const headingMatch = '[a-z]+(?:-?[a-z]+)*\\.?(?: [a-z]+(?:-?[a-z]+)*\\.?)*';
+  const sourceKeyMatch = SOURCE_KEY_REGEX.source.replace(/(?:^\^|\$$)/g, '');
+  const midTrailPartMatch = '[a-z]{2,3}(?:\\d{1,4}(?:\\.\\d{1,4})*)?';
+  const endTrailPartMatch = OPEN_TITLE_REGEX.source.replace(/(?:^\^|\$$)/g, '');
+  const subSourceTrailMatch = `(?:${[
+    `${midTrailPartMatch}(?: > ${midTrailPartMatch})*(?: > ${endTrailPartMatch})?`,
+    `${endTrailPartMatch}`,
+  ].join('|')})`;
   return new RegExp(
-    `^${CITATION_KEY_MATCH}(?: > ${nonHeadingMatch})*(?: > ${headingMatch})?$`
+    `^\\{(?:\\*|${sourceKeyMatch})\\}(?: ${subSourceTrailMatch})?$`,
+    'ui'
   );
 })();
+
+/** Matches strings that are equal/similar to Obsidian's default for new notes. */
+export const RESERVED_TITLE_REGEX = /^Untitled(?: (?:0|[1-9]\d*))?$/i;

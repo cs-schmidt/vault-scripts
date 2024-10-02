@@ -1,92 +1,78 @@
-import { OPEN_TITLE_REGEX, PATH_TITLE_REGEX, CITATION_KEY_MATCH } from './constants.js';
-import { getAPI } from 'obsidian-dataview';
+import {
+  RESERVED_TITLE_REGEX,
+  OPEN_TITLE_REGEX,
+  PATH_TITLE_REGEX,
+  SOURCE_KEY_REGEX,
+  SOURCE_KEY_PARSE_REGEX,
+} from './constants.js';
 
 /**
- * Requests an open title for the template from the user (see specification note).
- * @param {Object} tp - The Templater object.
- * @param {boolean} swapSlashes - If slashes should be swapped to hyphens.
+ * Requests an open title for the template from the user.
+ * @param {object} tp - The Templater object.
  * @returns {string}
- * @throws {Error} The title doesn't match OPEN_TITLE_REGEX or equals 'Untitled'.
+ * @throws {Error} Title matches RESERVED_TITLE_REGEX or doesn't match OPEN_TITLE_REGEX.
  */
-export async function requestOpenTitle(tp, swapSlashes = false) {
+export async function requestOpenTitle(tp) {
   const title = (await tp.system.prompt('Open Title:', '', true)).trim();
-  if (!isOpenTitle(title)) throw Error('Creation Error: Invalid open title.');
-  if (swapSlashes) return swapSlashes(title, '-');
+  if (!isValidOpenTitle(title)) throw Error('Creation Error: Invalid open title.');
   return title;
 }
 
 /**
- * Requests a path title for the template from the user (see specification note).
- * @param {Object} tp - The Templater object.
+ * Requests a path title for the template from the user.
+ * @param {object} tp - The Templater object.
  * @returns {string}
- * @throws {Error} The title doesn't match PATH_TITLE_REGEX or equals 'Untitled'.
+ * @throws {Error} Title matches RESERVED_TITLE_REGEX or doesn't match PATH_TITLE_REGEX.
  */
 export async function requestPathTitle(tp) {
   const title = (await tp.system.prompt('Path Title:', '', true)).trim();
-  if (!isPathTitle(title)) throw Error('Creation Error: Invalid path title.');
+  if (!isValidPathTitle(title)) throw Error('Creation Error: Invalid path title.');
   return title;
 }
 
 /**
- * Asks the user if the template pertains to a citeable source.
- * @param {Object} tp - The Templater object.
- * @return {boolean}
- */
-export async function isForCitableSource(tp) {
-  return tp.system.suggester(
-    ['Citable', 'Noncitable'],
-    [true, false],
-    true,
-    'Citable or noncitable source?'
-  );
-}
-
-/**
- * Checks if `title` is in OPEN_TITLE format.
+ * Checks if `title` is in OPEN_TITLE format and valid.
  * @param {string} title
  * @returns {boolean}
  */
-export function isOpenTitle(title) {
-  return title !== 'Untitled' && OPEN_TITLE_REGEX.test(title);
+export function isValidOpenTitle(title) {
+  return !RESERVED_TITLE_REGEX.test(title) && OPEN_TITLE_REGEX.test(title);
 }
 
 /**
- * Checks if `title` is in PATH_TITLE format.
+ * Checks if `title` is in PATH_TITLE format and valid.
  * @param {string} title
  * @returns {boolean}
  */
-export function isPathTitle(title) {
-  return title !== 'Untitled' && PATH_TITLE_REGEX.test(title);
+export function isValidPathTitle(title) {
+  return !RESERVED_TITLE_REGEX.test(title) && PATH_TITLE_REGEX.test(title);
 }
 
 /**
- * Return a citation key match from `title` if it exists or an empty string otherwise.
- * @param {string} title
- * @returns {string}
- */
-export function grabCitationKey(title) {
-  return title.match(`^${CITATION_KEY_MATCH}`) || '';
-}
-
-/**
- * Replace all slashes in `title` to `str`.
- * @param {string} title
+ * Check if the string `str` is a valid source key.
  * @param {string} str
- * @returns {string}
+ * @returns {boolean}
  */
-export function swapSlashes(title, str) {
-  return title.replaceAll(/[\/\\]/g, str);
+export function isValidSourceKey(str) {
+  return SOURCE_KEY_REGEX.test(str);
 }
 
 /**
- * Check if `filename` is unique under the "entries/" folder.
- * @param {string} filename
+ * Return a source key from `title` if it exists or an empty string otherwise.
+ * @param {string} title
+ * @returns {string}
+ */
+export function parseSourceKey(title) {
+  return title.match(SOURCE_KEY_PARSE_REGEX)?.[1] || '';
+}
+
+/**
+ * Check if `fileTitle` is unique under the "entries/" folder.
+ * @param {string} [fileTitle='']
  * @returns {boolean}
  */
-export function isUniqueFilename(filename) {
-  // TODO: Make this throw an error when Dataview isn't available.
-  return getAPI()
-    .pages('"entries"')
-    .map((page) => page.file.name)
-    .every((pageFilename) => pageFilename !== filename);
+export function isUniqueEntry(fileTitle = '') {
+  return app.vault
+    .getMarkdownFiles()
+    .every((file) => file.path != `entries/${fileTitle}.md`);
 }

@@ -1,163 +1,212 @@
-import { PATH_TITLE_REGEX } from '../utils/constants.js';
+import { isValidSourceKey, parseSourceKey } from '../utils/templates.js';
 
 // NOTE: To get access to the full Dataview API you must pass the Dataview object as an
 //       argument. Accessing the API using `app.plugins.plugins.dataview.api` gives you
-//       a "DataviewAPI" object instead of a "DataviewInlineAPI" object.
+//       the "DataviewAPI" object instead of the "DataviewInlineAPI" object.
 
-export default {
-  displayUnresolvedInquiries,
-  displayUnresolvedPractice,
-  displayLogEntries,
-  displayOtherCommentsAndQuestions,
-  displayOtherTasks,
-};
+// TODO: Incorporate checks on parents metadata in each unresolved type query.
 
 /**
- * Displays inquiries that aren't resolved: i.e., inquiries that aren't done or have an
- * inconsistency between their title and citation key.
- * @param {DataviewInlineApi} dv - Dataview's Inline API.
+ * Display inquiries that aren't resolved: they aren't done or have a source key error.
+ * @param {DataviewInlineAPI} dv - Dataview's inline API.
  * @returns {void}
  */
-function displayUnresolvedInquiries(dv) {
-  // FIXME: Ensure you await Templater startup templates and Dataview.
+export function showUnresolvedInquiries(dv) {
   const invalidRecords = [];
   const pendingRecords = [];
-  dv.pages('#inquiry').forEach(extractRecordIfUnresolved);
+  dv.pages('#inquiry').forEach(attachToRecordList);
   if (invalidRecords.length && pendingRecords.length) {
     dv.header(4, '**\\*Invalid Inquiries\\***');
     dv.table(['**Inquiry**', '**Error Message**'], invalidRecords);
-    dv.header(4, 'Pending Inquiry');
-    dv.table(['**Inquiry**', '**Citation Key**', '**Link**'], pendingRecords);
+    dv.header(4, '**Pending Inquiries**');
+    dv.table(['**Inquiry**', '**Source Key**', '**Link**'], pendingRecords);
   } else if (invalidRecords.length) {
     dv.header(4, '**\\*Invalid Inquiries\\***');
     dv.table(['**Inquiry**', '**Error Message**'], invalidRecords);
   } else if (pendingRecords.length)
-    dv.table(['**Inquiry**', '**Citation Key**', '**Link**'], pendingRecords);
-  else dv.span('No unresolved inquiries found.');
+    dv.table(['**Inquiry**', '**Source Key**', '**Link**'], pendingRecords);
+  else dv.span('*No unresolved inquiries found.*');
 
-  // Internal Helpers
   // *****************************************************************
-  function extractRecordIfUnresolved(page) {
+  function attachToRecordList(page) {
     const title = page.file.name;
-    const citationKey = page['citation-key'];
-    if (typeof citationKey === 'undefined') {
-      invalidRecords.push([dv.fileLink(title), 'Missing citation-key property.']);
-      return;
-    }
-    if (typeof citationKey !== 'string') {
-      invalidRecords.push([dv.fileLink(title), "Citation key isn't a string."]);
-      return;
-    }
-    const hasPathTitle = PATH_TITLE_REGEX.test(title);
-    const hasCitationKeyPrefix = title.startsWith(citationKey);
-    if (hasPathTitle && !hasCitationKeyPrefix)
-      invalidRecords.push([
-        dv.fileLink(title),
-        'Path title and citation key mismatch.',
-      ]);
-    else if (!hasPathTitle && citationKey.length > 0)
-      invalidRecords.push([
-        dv.fileLink(title),
-        'Nonpath title without empty citation key.',
-      ]);
+    const sourceKey = page['source-key'];
+    if (sourceKey === undefined)
+      invalidRecords.push([dv.fileLink(title), '`source-key` is missing.']);
+    else if (typeof sourceKey != 'string')
+      invalidRecords.push([dv.fileLink(title), '`source-key` is not a string.']);
+    else if (!isValidSourceKey(sourceKey))
+      invalidRecords.push([dv.fileLink(title), '`source-key` is invalid.']);
+    else if (parseSourceKey(title) != sourceKey)
+      invalidRecords.push([dv.fileLink(title), '`source-key` mismatch.']);
     else if (!page.done)
-      pendingRecords.push([dv.fileLink(title), citationKey || null, page.link || null]);
+      pendingRecords.push([
+        dv.fileLink(title),
+        `\`${sourceKey}\`` || null,
+        page.link || null,
+      ]);
   }
 }
 
 /**
- * Displays practice entries that aren't resolved: i.e., inquiries that aren't done or
- * have an inconsistency between their title and citation key.
- * @param {DataviewInlineApi} dv - Dataview's Inline API.
+ * Display practice entries that aren't resolved: they aren't done, a missing count
+ * type, or have an inconsistency between their title and citation key.
+ * @param {DataviewInlineAPI} dv - Dataview's inline API.
  * @returns {void}
  */
-function displayUnresolvedPractice(dv) {
-  // FIXME: Ensure you await Templater startup templates and Dataview.
+export function showUnresolvedPractice(dv) {
   const invalidRecords = [];
   const pendingRecords = [];
-  dv.pages('#practice').forEach(extractRecordIfUnresolved);
+  dv.pages('#practice').forEach(attachToRecordList);
   if (invalidRecords.length && pendingRecords.length) {
-    dv.header(4, '**\\*Invalid Practice Entries\\***');
-    dv.table(['**Practice Entry**', '**Error Message**'], invalidRecords);
-    dv.header(4, 'Pending Practice Entry');
-    dv.table(['**Practice Entry**', '**Citation Key**', '**Link**'], pendingRecords);
+    dv.header(4, '**\\*Invalid Practice\\***');
+    dv.table(['**Practice**', '**Error Message**'], invalidRecords);
+    dv.header(4, '**Pending Practice**');
+    dv.table(['**Practice**', '**Source Key**', '**Link**', '**Type**'], pendingRecords);
   } else if (invalidRecords.length) {
-    dv.header(4, '**\\*Invalid Practice Entries\\***');
-    dv.table(['**Practice Entry**', '**Error Message**'], invalidRecords);
+    dv.header(4, '**\\*Invalid Practice\\***');
+    dv.table(['**Practice**', '**Error Message**'], invalidRecords);
   } else if (pendingRecords.length)
-    dv.table(['**Practice Entry**', '**Citation Key**', '**Link**'], pendingRecords);
-  else dv.span('No unresolved practice entries found.');
+    dv.table(['**Practice**', '**Source Key**', '**Link**', '**Type**'], pendingRecords);
+  else dv.span('*No unresolved practice entries found.*');
 
-  // Internal Helpers
   // *****************************************************************
-  function extractRecordIfUnresolved(page) {
+  function attachToRecordList(page) {
     const title = page.file.name;
     const type = page.type;
-    if (typeof type == 'undefined') {
-      invalidRecords.push([dv.fileLink(title), 'Missing type property.']);
-      return;
-    }
-    if (!['one', 'many'].includes(type)) {
-      invalidRecords.push([dv.fileLink(title), 'Type value must be "one" or "many"']);
-      return;
-    }
-    const citationKey = page['citation-key'];
-    if (typeof citationKey === 'undefined') {
-      invalidRecords.push([dv.fileLink(title), 'Missing citation-key property.']);
-      return;
-    }
-    if (typeof citationKey !== 'string') {
-      invalidRecords.push([dv.fileLink(title), "Citation key isn't a string."]);
-      return;
-    }
-    const hasPathTitle = PATH_TITLE_REGEX.test(title);
-    const hasCitationKeyPrefix = title.startsWith(citationKey);
-    if (hasPathTitle && !hasCitationKeyPrefix)
-      invalidRecords.push([
-        dv.fileLink(title),
-        'Path title and citation key mismatch.',
-      ]);
-    else if (!hasPathTitle && citationKey.length > 0)
-      invalidRecords.push([
-        dv.fileLink(title),
-        'Nonpath title without empty citation key.',
-      ]);
+    const sourceKey = page['source-key'];
+    if (type === undefined)
+      invalidRecords.push([dv.fileLink(title), '`type` is missing.']);
+    else if (!['one', 'many'].includes(type))
+      invalidRecords.push([dv.fileLink(title), '`type` must be "one" or "many"']);
+    else if (sourceKey === undefined)
+      invalidRecords.push([dv.fileLink(title), '`source-key` is missing.']);
+    else if (typeof sourceKey != 'string')
+      invalidRecords.push([dv.fileLink(title), '`source-key` is not a string.']);
+    else if (!isValidSourceKey(sourceKey))
+      invalidRecords.push([dv.fileLink(title), '`source-key` is invalid.']);
+    else if (parseSourceKey(title) != sourceKey)
+      invalidRecords.push([dv.fileLink(title), '`source-key` mismatch.']);
     else if (!page.done)
-      pendingRecords.push([dv.fileLink(title), citationKey || null, page.link || null]);
+      pendingRecords.push([
+        dv.fileLink(title),
+        `\`${sourceKey}\`` || null,
+        page.link || null,
+        type,
+      ]);
+  }
+}
+
+// TODO: Implement `showUnresolvedInformalEntries` function.
+/**
+ * @param {DataviewInlineAPI} dv - Dataview's inline API.
+ * @returns {void}
+ */
+export function showUnresolvedInformalEntries(dv) {
+  dv.span('*No unresolved informal entries found.*');
+}
+
+// TODO: Implement `showUnresolvedFormalEntries` function.
+/**
+ * @param {DataviewInlineAPI} dv - Dataview's inline API.
+ * @returns {void}
+ */
+export function showUnresolvedFormalEntries(dv) {
+  dv.span('*No unresolved formal entries found.*');
+}
+
+// TODO: Implement `showUnresolvedThoughts` function.
+/**
+ * @param {DataviewInlineAPI} dv - Dataview's inline API.
+ * @returns {void}
+ */
+export function showUnresolvedThoughts(dv) {
+  dv.span('*No unresolved thoughts found.*');
+}
+
+/**
+ * Display all inquiries with the same source key as the current entry.
+ * @param {DataviewInlineAPI} dv - Dataview's inline API.
+ * @returns {void}
+ */
+export function showInquiryContentsTable(dv) {
+  const entryType = dv.current().tags?.[0];
+  const sourceKey = dv.current()['source-key'];
+  if (entryType !== '#inquiry') dv.span('*Entry must be an `#inquiry`.*');
+  else if (sourceKey === undefined) dv.span('*`source-key` is missing.*');
+  else if (typeof sourceKey != 'string') dv.span('*`source-key` is not a string.*');
+  else {
+    const records = dv
+      .pages('#inquiry')
+      .filter((page) => page['source-key'] === sourceKey)
+      .map((page) => [
+        dv.fileLink(page.file.name),
+        page.parents?.length ? page.parents : null,
+        page['source-link'] || null,
+        page.done,
+      ]);
+    if (records.length)
+      dv.table(['**Inquiry**', '**Parents**', '**Source Link**', '**Done**'], records);
+    else dv.span(`*No inquiries found under \`${sourceKey}\`.*`);
   }
 }
 
 /**
- * Fetches logs, sorting results in descending order (from most to least recent).
- * @param {DataviewInlineApi} dv - Dataview's Inline API.
- * @param {number} limit - The maximum number of log entries displayed.
+ * Display all practice with the same source key as the current entry.
+ * @param {DataviewInlineAPI} dv - Dataview's inline API.
  * @returns {void}
  */
-function displayLogEntries(dv, limit = 15) {
-  const results = dv
-    .pages('#log')
-    .sort((page) => page.date, 'desc')
-    .limit(limit)
-    .map((page) => {
-      const entryTitle = page.aliases?.[0]
-        ? dv.fileLink(page.file.name, false, page.aliases[0])
-        : dv.fileLink(page.file.name);
-      return [entryTitle, page.date];
-    });
-  if (results.length) dv.table(['Log', 'Date'], results);
-  else dv.span('No logs found.');
+export function showPracticeContentsTable(dv) {
+  const entryType = dv.current().tags?.[0];
+  const sourceKey = dv.current()['source-key'];
+  if (entryType !== '#practice') dv.span('*Entry must be an `#practice`.*');
+  else if (sourceKey === undefined) dv.span('*`source-key` is missing.*');
+  else if (typeof sourceKey != 'string') dv.span('*`source-key` is not a string.*');
+  else {
+    const records = dv
+      .pages('#practice')
+      .filter((page) => page['source-key'] === sourceKey)
+      .map((page) => [
+        dv.fileLink(page.file.name),
+        page.parents?.length ? page.parents : null,
+        page['source-link'] || null,
+        page.done,
+      ]);
+    if (records.length)
+      dv.table(['**Practice**', '**Parents**', '**Source Link**', '**Done**'], records);
+    else dv.span(`*No practice found under \`${sourceKey}\`.*`);
+  }
 }
 
 /**
- * Displays "top-level" list items under the "Comments and Questions" heading of other
- * entries which contain a link to the current entry.
- * @param {DataviewInlineApi} dv - Dataview's Inline API.
+ * Display logs in descending order (from most recent to least).
+ * @param {DataviewInlineAPI} dv - Dataview's inline API.
+ * @param {number|undefined} limit - Max number of log entries shown.
  * @returns {void}
  */
-function displayOtherCommentsAndQuestions(dv) {
-  // NOTE: There's an edge case I can't guard: if a "Comments and Questions" header
-  //       isn't a top level heading or appears more than once, then list items
-  //       underneath can still show up.
+export function showLogs(dv, limit) {
+  const records = dv
+    .pages('#log')
+    .sort(({ date }) => date, 'desc')
+    .limit(limit)
+    .map((page) => {
+      const filename = page.file.name;
+      const title = page.aliases?.[0] || filename;
+      return [dv.fileLink(filename, false, title), page.date];
+    });
+  if (records.length) dv.table(['Log', 'Date'], records);
+  else dv.span('*No logs found.*');
+}
+
+/**
+ * Display "top-level" list items under the "Comments and Questions" section of other
+ * entries which also contain a link to the current entry.
+ * @param {DataviewInlineAPI} dv - Dataview's inline API.
+ * @returns {void}
+ */
+export function showOtherCommentsAndQuestions(dv) {
+  // NOTE: Unguardable edge case: if a "Comments and Questions" header isn't a top level
+  //       heading or occurs more than once, then list items under it will show up.
   const currentFile = dv.current().file;
   const targetSection = 'Comments and Questions';
   const records = dv
@@ -175,19 +224,19 @@ function displayOtherCommentsAndQuestions(dv) {
           dv.sectionLink(name, targetSection, false, aliases?.[0] || name),
         ])
     );
-  if (records.length) dv.table(['**Comment/Question**', '**Source Note**'], records);
-  else dv.span('No external comments or questions found.');
+  if (records.length) dv.table(['**Comment/Question**', '**Origin**'], records);
+  else dv.span('*No external comments or questions found.*');
 }
 
 /**
- * Displays "top-level" tasks under the "Tasks" heading of other entries which contain a
- * link to the current entry.
- * @param {DataviewInlineApi} dv - Dataview's Inline API.
+ * Display "top-level" tasks under the "Tasks" section of other entries which also
+ * contain a link to the current entry.
+ * @param {DataviewInlineAPI} dv - Dataview's inline API.
  * @returns {void}
  */
-function displayOtherTasks(dv) {
-  // NOTE: There's an edge case I can't guard: if a "Tasks" header isn't a top level
-  //       heading or appears more than once, then tasks underneath can still show up.
+export function showOtherTasks(dv) {
+  // NOTE: Unguardable edge case: if a "Tasks" header isn't a top level heading or occurs
+  //       more than once, then list items under it will show up.
   const currentFile = dv.current().file;
   const targetSection = 'Tasks';
   const records = dv
@@ -205,8 +254,8 @@ function displayOtherTasks(dv) {
           dv.sectionLink(name, targetSection, false, aliases?.[0] || name),
         ])
     );
-  if (records.length) dv.table(['**Task**', '**Source Note**'], records);
-  else dv.span('No external tasks found.');
+  if (records.length) dv.table(['**Task**', '**Origin**'], records);
+  else dv.span('*No external tasks found.*');
 }
 
 // /**

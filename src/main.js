@@ -1,10 +1,10 @@
 import { Plugin } from 'obsidian';
-import dataviews from './dataviews/index.js';
-import templates from './templates/index.js';
+import * as templates from './templates/index.js';
+import * as dataviews from './dataviews/index.js';
 
 export default class VaultScripts extends Plugin {
-  static dataviews = dataviews;
   static templates = templates;
+  static dataviews = dataviews;
 
   async onload() {
     globalThis.VaultScripts = VaultScripts;
