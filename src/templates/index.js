@@ -68,14 +68,16 @@ export async function initializePractice(tp) {
   return { sourceKey: parseSourceKey(title), type };
 }
 
-// TODO: Implement `initializeInformal` function.
 /**
- * The initialization function for the informal template.
+ * The initialization function for open-titled-type templates without metadata (e.g.,
+ * informal entries and thoughts).
  * @param {object} tp - The Templater object.
- * @returns {void}
- * @throws {Error} If any of the initialization steps throw an error.
  */
-export async function initializeInformal(params) {}
+export async function initializeOpenEntry(tp) {
+  const title = await requestOpenTitle(tp);
+  if (!isUniqueEntry(title)) throw Error('Creation Error: Title is not unique.');
+  await tp.file.rename(title);
+}
 
 // TODO: Implement `initializeFormal` function.
 /**
@@ -85,18 +87,6 @@ export async function initializeInformal(params) {}
  * @throws {Error} If any of the initialization steps throw an error.
  */
 export async function initializeFormal(params) {}
-
-/**
- * The initialization function for the thought template.
- * @param {object} tp - The Templater object.
- * @returns {void}
- * @throws {Error} If any of the initialization steps throw an error.
- */
-export async function initializeThought(tp) {
-  const title = await requestOpenTitle(tp);
-  if (!isUniqueEntry(title)) throw Error('Creation Error: Title is not unique.');
-  await tp.file.rename(title);
-}
 
 /**
  * The initialization function for the log template.

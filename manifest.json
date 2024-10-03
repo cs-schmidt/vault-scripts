@@ -1,6 +1,6 @@
 {
   "id": "vault-scripts",
   "name": "Vault Scripts",
-  "description": "Scripts for my Obsidian-based knowledge management system.",
+  "description": "A utility plugin for managing my Obsidian-based knowledge management system.",
   "isDesktopOnly": false
 }
