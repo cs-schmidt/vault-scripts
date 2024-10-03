@@ -4,6 +4,7 @@ import {
   PATH_TITLE_REGEX,
   SOURCE_KEY_REGEX,
   SOURCE_KEY_PARSE_REGEX,
+  FORMAL_ID_REGEX,
 } from './constants.js';
 
 /**
@@ -58,6 +59,15 @@ export function isValidSourceKey(str) {
 }
 
 /**
+ * Check if the string `str` is a valid formal id.
+ * @param {string} str
+ * @returns {boolean}
+ */
+export function isValidFormalID(str) {
+  return FORMAL_ID_REGEX.test(str);
+}
+
+/**
  * Return a source key from `title` if it exists or an empty string otherwise.
  * @param {string} title
  * @returns {string}
@@ -75,4 +85,19 @@ export function isUniqueEntry(fileTitle = '') {
   return app.vault
     .getMarkdownFiles()
     .every((file) => file.path != `entries/${fileTitle}.md`);
+}
+
+/**
+ * Finds all formal IDs and returns them as an array.
+ * @returns {string[]}
+ */
+export function fetchFormalIDs() {
+  return app.vault
+    .getMarkdownFiles()
+    .map(
+      (file) =>
+        file.parent.name === 'entries' &&
+        app.metadataCache.getFileCache(file).frontmatter?.['formal-id']
+    )
+    .filter(Boolean);
 }
