@@ -1,0 +1,10 @@
+# Version Control
+**/.git/
+.gitignore
+
+# Package Management
+**/node_modules/
+**/package-lock.json
+
+# Other
+.env
