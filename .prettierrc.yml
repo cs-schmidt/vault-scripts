@@ -1,0 +1,11 @@
+printWidth: 90
+useTabs: false
+tabWidth: 2
+singleQuote: true
+quoteProps: 'as-needed'
+trailingComma: 'all'
+bracketSpacing: true
+arrowParens: 'always'
+semi: true
+endOfLine: 'lf'
+experimentalTernaries: false
