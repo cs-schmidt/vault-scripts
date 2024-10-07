@@ -18,5 +18,9 @@
     "prettier": "^3.3.3",
     "webpack": "^5.94.0",
     "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "joi": "^17.13.3",
+    "obsidian-dataview": "^0.5.67"
   }
 }

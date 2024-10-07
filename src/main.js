@@ -1,6 +1,6 @@
 import { Plugin } from 'obsidian';
-import * as templates from './templates/index.js';
-import * as dataviews from './dataviews/index.js';
+import * as templates from './templates';
+import * as dataviews from './dataviews';
 
 export default class VaultScripts extends Plugin {
   static templates = templates;
