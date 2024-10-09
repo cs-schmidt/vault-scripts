@@ -3,19 +3,19 @@
 //       - Furthermore, make sure the citation key format in Zotero does not overlap with
 //         the date code prefix on log entries.
 
-/** Matches strings are in SOURCE_KEY format. */
+/** Matches SOURCE_KEY format strings. */
 export const SOURCE_KEY_REGEX =
-  /^[a-z]+(?:_(?:(?:[A-Z]|\d)+[a-z\d]*)+)?_(?:\d{4}|N\.D\.)$/;
+  /^(?:[a-z]+(?:_(?:(?:[A-Z]|\d)+[a-z\d]*)+)?_(?:\d{4}|N\.D\.)|\*)$/;
 
-/**  */
+/** Matches SOURCE_KEY format string prefixes. */
 export const SOURCE_KEY_PARSE_REGEX = new RegExp(
-  `^\\{(${SOURCE_KEY_REGEX.source.replace(/(?:^\^|\$$)/g, '')})\\}`
+  `^\\{(${SOURCE_KEY_REGEX.source.replace(/(?:^\^|\$$)/g, '')})\\}`,
 );
 
-/** Matches strings in FORMAL_ID format (see specification). */
+/** Matches FORMAL_ID format strings (see specification). */
 export const FORMAL_ID_REGEX = /^[A-Z]{2,4}$/;
 
-/** Matches strings that are in OPEN_TITLE format. */
+/** Matches OPEN_TITLE format strings (see specification). */
 export const OPEN_TITLE_REGEX = (() => {
   // Matches alphanumeric strings that may have periods and be possessive or contractive.
   const alphanumDotsAposMatch = "[\\p{L}\\d]+(?:\\.[\\p{L}\\d]+)*(?:'\\p{L}+){0,2}";
@@ -35,7 +35,7 @@ export const OPEN_TITLE_REGEX = (() => {
   return new RegExp(`^${phraseMatch}(?: ${phraseMatch})*$`, 'ui');
 })();
 
-/** Matches strings that are in PATH_TITLE format. */
+/** Matches PATH_TITLE format strings (see specification). */
 export const PATH_TITLE_REGEX = (() => {
   const sourceKeyMatch = SOURCE_KEY_REGEX.source.replace(/(?:^\^|\$$)/g, '');
   const midTrailPartMatch = '[a-z]{2,3}(?:\\d{1,4}(?:\\.\\d{1,4})*)?';
@@ -46,7 +46,7 @@ export const PATH_TITLE_REGEX = (() => {
   ].join('|')})`;
   return new RegExp(
     `^\\{(?:\\*|${sourceKeyMatch})\\}(?: ${subSourceTrailMatch})?$`,
-    'ui'
+    'ui',
   );
 })();
 

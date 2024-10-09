@@ -5,7 +5,7 @@ import {
   SOURCE_KEY_REGEX,
   SOURCE_KEY_PARSE_REGEX,
   FORMAL_ID_REGEX,
-} from './constants.js';
+} from './constants';
 
 /**
  * Requests an open title for the template from the user.
@@ -88,7 +88,7 @@ export function isUniqueEntry(fileTitle = '') {
 }
 
 /**
- * Finds all formal IDs and returns them as an array.
+ * Finds all formal IDs and returns them in an array.
  * @returns {string[]}
  */
 export function fetchFormalIDs() {
@@ -97,7 +97,7 @@ export function fetchFormalIDs() {
     .map(
       (file) =>
         file.parent.name === 'entries' &&
-        app.metadataCache.getFileCache(file).frontmatter?.['formal-id']
+        app.metadataCache.getFileCache(file).frontmatter?.['formal-id'],
     )
-    .filter(Boolean);
+    .filter(isValidFormalID);
 }
