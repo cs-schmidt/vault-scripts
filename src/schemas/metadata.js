@@ -18,13 +18,13 @@ export const parentsSchema = Joi.array()
     const hasInvalidValue = parents.some((value) => {
       if (!isLink(value)) return true;
       const valueTags = app.metadataCache.getCache(value.path).frontmatter?.tags;
-      if (!valueTags?.includes('#informal')) return true;
+      if (!valueTags?.some((tag) => ['#informal', 'ℹ️'].includes(tag))) return true;
     });
     return hasInvalidValue ? error('any.only') : parents;
   })
   .messages({
     'array.base': '`parents` is not an array.',
-    'any.only': '`parents` can only contain links to informal notes.',
+    'any.only': '`parents` can only have links to notes with tag #informal or ℹ️.',
     'any.required': '`parents` is missing.',
   });
 

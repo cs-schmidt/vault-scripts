@@ -1,82 +1,106 @@
+import { pageSchemas } from '../schemas';
+import { getAPI } from 'obsidian-dataview';
+
+const isLink = getAPI().value.isLink;
+
 // NOTE: To access the full Dataview API you must pass the Dataview object as an argument.
 //       Using `app.plugins.plugins.dataview.api` provides the DataviewAPI object instead
 //       of the DataviewInlineAPI object.
 
-// TODO: Display parents of entries in all queries.
-
 /**
- * Display all inquiries with the same source key as the current entry.
+ * Show all inquiries with the same source key as the current entry.
  * @param {DataviewInlineAPI} dv - Dataview's inline API.
  * @returns {void}
  */
 export function showInquiryContentsTable(dv) {
-  const entryType = dv.current().tags?.[0];
-  const sourceKey = dv.current()['source-key'];
-  if (entryType !== '#inquiry') dv.span('*Entry must be an `#inquiry`.*');
-  else if (sourceKey === undefined) dv.span('*`source-key` is missing.*');
-  else if (typeof sourceKey != 'string') dv.span('*`source-key` is not a string.*');
+  const entry = dv.current();
+  const { error } = pageSchemas.inquiryPageSchema.validate(entry);
+  if (error) dv.paragraph(`*Invalid inquiry page: ${error.message}*`);
   else {
+    const type = entry.tags[0];
+    const sourceKey = entry['source-key'];
     const records = dv
-      .pages('#inquiry')
+      .pages(type)
       .filter((page) => page['source-key'] === sourceKey)
+      .sort((page) => page.file.name, 'asc')
       .map((page) => [
-        dv.fileLink(page.file.name),
-        page.parents?.length ? page.parents : null,
-        page['source-link'] || null,
-        page.done,
+        dv.paragraph(dv.fileLink(page.file.name)),
+        dv.paragraph(page.parents?.length ? page.parents : null),
+        dv.paragraph(page['source-link'] || null),
+        dv.paragraph(page.done ? '`true`' : '`false`'),
       ]);
     if (records.length)
       dv.table(['**Inquiry**', '**Parents**', '**Source Link**', '**Done**'], records);
-    else dv.span(`*No inquiries found under \`${sourceKey}\`.*`);
+    else dv.span(`**No inquiries found under \`${sourceKey}\`**`);
   }
 }
 
 /**
- * Display all practice with the same source key as the current entry.
+ * Show all practice with the same source key as the current entry.
  * @param {DataviewInlineAPI} dv - Dataview's inline API.
  * @returns {void}
  */
 export function showPracticeContentsTable(dv) {
-  const entryType = dv.current().tags?.[0];
-  const sourceKey = dv.current()['source-key'];
-  if (entryType !== '#practice') dv.span('*Entry must be `#practice`.*');
-  else if (sourceKey === undefined) dv.span('*`source-key` is missing.*');
-  else if (typeof sourceKey != 'string') dv.span('*`source-key` is not a string.*');
+  const entry = dv.current();
+  const { error } = pageSchemas.practicePageSchema.validate(entry);
+  if (error) dv.paragraph(`*Invalid practice page: ${error.message}*`);
   else {
+    const type = entry.tags[0];
+    const sourceKey = entry['source-key'];
     const records = dv
-      .pages('#practice')
+      .pages(type)
       .filter((page) => page['source-key'] === sourceKey)
+      .sort((page) => page.file.name, 'asc')
       .map((page) => [
-        dv.fileLink(page.file.name),
-        page.parents?.length ? page.parents : null,
-        page['source-link'] || null,
-        page.done,
+        dv.paragraph(dv.fileLink(page.file.name)),
+        dv.paragraph(page.parents?.length ? page.parents : null),
+        dv.paragraph(page['source-link'] || null),
+        dv.paragraph(page['one-or-many'] ? `\`${page['one-or-many']}\`` : null),
+        dv.paragraph(page.done ? '`true`' : '`false`'),
       ]);
     if (records.length)
-      dv.table(['**Practice**', '**Parents**', '**Source Link**', '**Done**'], records);
-    else dv.span(`*No practice found under \`${sourceKey}\`.*`);
+      dv.table(
+        ['**Practice**', '**Parents**', '**Source Link**', '**One-or-many**', '**Done**'],
+        records,
+      );
+    else dv.span(`**No inquiries found under \`${sourceKey}\`**`);
   }
 }
 
-// TODO: Implement `showInformalDescendant` function.
 /**
  * Display descendant informal entries.
  * @param {object} dv - The Dataview object.
  * @returns {void}
  */
 export function showDescendantInformals(dv) {
-  const entryName = dv.current().file.name;
-  const entryType = dv.current().tags?.[0];
-  if (entryType !== '#informal') dv.span('*Entry must be `#informal`.*');
+  const entry = dv.current();
+  const type = entry.tags?.[0];
+  const { error } = pageSchemas.informalPageSchema.validate(entry);
+  if (type !== 'ℹ️' && error)
+    dv.paragraph(
+      `Invalid page: ${
+        error.details.type === 'any.only' && type !== 'ℹ️'
+          ? `\`tags\` should contain ℹ️, or ${error.message}`
+          : `${error.message}`
+      }`,
+    );
   else {
     const records = dv
       .pages('#informal')
-      .filter(({ parents }) =>
-        parents?.some((link) => link?.path === `entries/${entryName}.md`),
+      .filter(
+        (page) =>
+          page.parents instanceof Array &&
+          page.parents.some((value) => isLink(value) && value.path === entry.file.path),
       )
-      .map((page) => [dv.fileLink(page.file.name), page.parents, page.tags?.[1]]);
-    if (records.length) dv.table(['**Informal**', '**Parents**', '**Status**'], records);
-    else dv.span('*No descendant informal entries found.*');
+      .map((page) => [
+        dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
+        dv.paragraph(page.parents),
+        dv.paragraph(page['formal-id'] ? `\`${page['formal-id']}\`` : null),
+        dv.paragraph(page.tags?.[1] || null),
+      ]);
+    if (records.length)
+      dv.table(['**Informal**', '**Parents**', '**Formal ID**', '**Status**'], records);
+    else dv.paragraph('*No descendant informals found.*');
   }
 }
 
@@ -90,14 +114,31 @@ export function showSiblingFormals(dv) {
   dv.span('*No descendant formal entries found.*');
 }
 
-// TODO: Implement `showDescendantThoughts` function.
 /**
  * Display descendant thoughts entries.
  * @param {object} dv - The Dataview object.
  * @returns {void}
  */
 export function showDescendantThoughts(dv) {
-  dv.span('*No descendant thoughts found.*');
+  const entry = dv.current();
+  const { error } = pageSchemas.informalPageSchema.validate(entry);
+  if (error) dv.paragraph(`*Invalid informal page: ${error.message}*`);
+  else {
+    const records = dv
+      .pages('#thought')
+      .filter(
+        (page) =>
+          page.parents instanceof Array &&
+          page.parents.some((value) => isLink(value) && value.path === entry.file.path),
+      )
+      .map((page) => [
+        dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
+        dv.paragraph(page.parents),
+        dv.paragraph(page.tags?.[1] || null),
+      ]);
+    if (records.length) dv.table(['**Thought**', '**Parents**', '**Status**'], records);
+    else dv.span('*No descendant thoughts found.*');
+  }
 }
 
 /**
