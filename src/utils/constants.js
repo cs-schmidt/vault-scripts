@@ -1,7 +1,7 @@
 // NOTE: `SOURCE_KEY_REGEX` must match Better Bibtex citation key format in Zotero or "*":
 //       - Bibtex Format: auth.lower + "_" + shorttitle(3,3) + "_" + (year || N.D.)
-//       - Furthermore, make sure the citation key format in Zotero does not overlap with
-//         the date code prefix on log entries.
+//       - Also, ensure the citation key format in Zotero and date code prefixes on log
+//         entries don't overlap.
 
 /** Matches SOURCE_KEY format strings. */
 export const SOURCE_KEY_REGEX =
@@ -11,9 +11,6 @@ export const SOURCE_KEY_REGEX =
 export const SOURCE_KEY_PARSE_REGEX = new RegExp(
   `^\\{(${SOURCE_KEY_REGEX.source.replace(/(?:^\^|\$$)/g, '')})\\}`,
 );
-
-/** Matches FORMAL_ID format strings (see specification). */
-export const FORMAL_ID_REGEX = /^[A-Z]{2,4}$/;
 
 /** Matches OPEN_TITLE format strings (see specification). */
 export const OPEN_TITLE_REGEX = (() => {
@@ -52,3 +49,6 @@ export const PATH_TITLE_REGEX = (() => {
 
 /** Matches strings that are equal/similar to Obsidian's default for new notes. */
 export const RESERVED_TITLE_REGEX = /^Untitled(?: (?:0|[1-9]\d*))?$/i;
+
+/** Matches FORMAL_ID format strings (see specification). */
+export const FORMAL_ID_REGEX = /^[A-Z]{2,4}$/;

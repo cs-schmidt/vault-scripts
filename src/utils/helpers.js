@@ -9,7 +9,7 @@ import {
 
 /**
  * Requests an open title for the template from the user.
- * @param {object} tp - The Templater object.
+ * @param {object} tp The Templater object.
  * @returns {string}
  * @throws {Error} Title matches RESERVED_TITLE_REGEX or doesn't match OPEN_TITLE_REGEX.
  */
@@ -21,7 +21,7 @@ export async function requestOpenTitle(tp) {
 
 /**
  * Requests a path title for the template from the user.
- * @param {object} tp - The Templater object.
+ * @param {object} tp The Templater object.
  * @returns {string}
  * @throws {Error} Title matches RESERVED_TITLE_REGEX or doesn't match PATH_TITLE_REGEX.
  */
@@ -100,4 +100,15 @@ export function fetchFormalIDs() {
         app.metadataCache.getFileCache(file).frontmatter?.['formal-id'],
     )
     .filter(isValidFormalID);
+}
+
+/**
+ * Takes a string and returns a copy with the first letter capitalized.
+ * @param {string} str
+ * @returns {string}
+ */
+export function capitalize(str) {
+  if (typeof str != 'string') throw Error('Capitalize must be called on a string.');
+  if (str == '') return str;
+  return str[0].toUpperCase() + str.slice(1);
 }
