@@ -46,8 +46,10 @@ export async function initializeEntry(tp) {
 export async function initializeInquiry(tp) {
   const title = await requestPathTitle(tp);
   if (!isUniqueEntry(title)) throw Error('Creation Error: Title is not unique.');
+  const sourceKey = parseSourceKey(title);
+  if (sourceKey == '$') throw Error('Creation Error: Invalid path title');
   await tp.file.rename(title);
-  return { sourceKey: parseSourceKey(title) };
+  return { sourceKey };
 }
 
 /**
