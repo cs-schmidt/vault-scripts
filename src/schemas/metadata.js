@@ -15,12 +15,14 @@ export const aliasesSchema = Joi.array().items(Joi.string()).messages({
 /** Schema for the parents property on Dataview pages objects (SMarkdownPages). */
 export const parentsSchema = Joi.array()
   .custom((parents, { error }) => {
-    const hasInvalidValue = parents.some((value) => {
+    const isInvalid = parents.some((value) => {
       if (!isLink(value)) return true;
-      const valueTags = app.metadataCache.getCache(value.path).frontmatter?.tags;
-      if (!valueTags?.some((tag) => ['#informal', 'ℹ️'].includes(tag))) return true;
+      const linkedNote = app.metadataCache.getCache(value.path);
+      if (!linkedNote) return true;
+      if (!linkedNote.frontmatter?.tags?.some((tag) => tag == '#informal' || tag == 'ℹ️'))
+        return true;
     });
-    return hasInvalidValue ? error('any.only') : parents;
+    return isInvalid ? error('any.only') : parents;
   })
   .messages({
     'array.base': '`parents` is not an array.',
@@ -58,33 +60,29 @@ export const doneSchema = Joi.boolean().messages({
 });
 
 /**
- * Schema for a one element tags property on Dataview pages objects (SMarkdownPages).
- * @param {string} tag
- * @returns {Joi.ArraySchema<string[]>}
+ * Creates a Schema for the tags property on Dataview pages objects (SMarkdownPages).
+ * @param {string} type The notes type: e.g., "inquiry", "practice", etc.
+ * @param {boolean} noStatus Makes a schema that won't look for a status in the array.
  */
-export function makeNonStatusTagsSchema(tag) {
-  return Joi.array()
-    .ordered(Joi.string().equal(`#${tag}`))
-    .messages({
-      'array.base': '`tags` is not an array.',
-      'array.orderedLength': '`tags` must contain one value only.',
-      'any.only': `\`tags\` must contain '#${tag}'.`,
-      'any.required': '`tags` is missing.',
-    });
-}
-
-/**
- * Schema for a two element tags property on Dataview pages objects (SMarkdownPages).
- * @param {string} tag
- * @returns {Joi.ArraySchema<string[]>}
- */
-export function makeStatusedTagsSchema(tag) {
-  return Joi.array()
-    .ordered(Joi.string().equal(`#${tag}`), Joi.string().equal('🌰', '🌱', '🌿', '🌲'))
-    .messages({
-      'array.base': '`tags` is not an array.',
-      'array.orderedLength': '`tags` must contain two values only.',
-      'any.only': `\`tags\` must contain '#${tag}' and a status (🌰, 🌱, 🌿, 🌲).`,
-      'any.required': '`tags` is missing.',
-    });
+export function makeTagsSchema(type, noStatus = true) {
+  const typeSchema = Joi.string().equal(`#${type}`);
+  const messageDefaults = {
+    'array.base': '`tags` is not an array.',
+    'any.required': '`tags` is missing.',
+  };
+  return noStatus
+    ? Joi.array()
+        .ordered(typeSchema)
+        .messages({
+          ...messageDefaults,
+          'array.orderedLength': '`tags` must contain one value only.',
+          'any.only': `\`tags\` must contain '#${type}'.`,
+        })
+    : Joi.array()
+        .ordered(typeSchema, Joi.string().equal('🌰', '🌱', '🌿', '🌲'))
+        .messages({
+          ...messageDefaults,
+          'array.orderedLength': '`tags` must contain two values only.',
+          'any.only': `\`tags\` must contain '#${type}' and a status (🌰, 🌱, 🌿, 🌲).`,
+        });
 }

@@ -1,11 +1,11 @@
 // NOTE: `SOURCE_KEY_REGEX` must match Better Bibtex citation key format in Zotero or "*":
 //       - Bibtex Format: auth.lower + "_" + shorttitle(3,3) + "_" + (year || N.D.)
-//       - Also, ensure the citation key format in Zotero and date code prefixes on log
-//         entries don't overlap.
+//       - Also, ensure the citation key format in Zotero and log date code prefixes don't
+//         overlap.
 
 /** Matches SOURCE_KEY format strings. */
 export const SOURCE_KEY_REGEX =
-  /^(?:[a-z]+(?:_(?:(?:[A-Z]|\d)+[a-z\d]*)+)?_(?:\d{4}|N\.D\.)|\*)$/;
+  /^(?:[a-z]+(?:_(?:(?:[A-Z]|\d)+[a-z\d]*)+)?_(?:\d{4}|N\.D\.)|\$)$/;
 
 /** Matches SOURCE_KEY format string prefixes. */
 export const SOURCE_KEY_PARSE_REGEX = new RegExp(
@@ -41,10 +41,7 @@ export const PATH_TITLE_REGEX = (() => {
     `${midTrailPartMatch}(?: > ${midTrailPartMatch})*(?: > ${endTrailPartMatch})?`,
     `${endTrailPartMatch}`,
   ].join('|')})`;
-  return new RegExp(
-    `^\\{(?:\\*|${sourceKeyMatch})\\}(?: ${subSourceTrailMatch})?$`,
-    'ui',
-  );
+  return new RegExp(`^\\{(?:${sourceKeyMatch})\\}(?: ${subSourceTrailMatch})?$`, 'ui');
 })();
 
 /** Matches strings that are equal/similar to Obsidian's default for new notes. */

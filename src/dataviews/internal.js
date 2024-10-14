@@ -9,7 +9,7 @@ import { pageSchemas } from '../schemas';
  * @param {DataviewInlineAPI} dv Dataview's inline API.
  * @returns {void}
  */
-export function showSiblingInquiries(dv) {
+export async function showSiblingInquiries(dv) {
   const note = dv.current();
   const { error } = pageSchemas.inquiryPageSchema.validate(note);
   if (error) dv.paragraph(`*Invalid inquiry: ${error.message}*`);
@@ -21,15 +21,14 @@ export function showSiblingInquiries(dv) {
           !pageSchemas.inquiryPageSchema.validate(page).error &&
           page['source-key'] === note['source-key'],
       )
-      .sort((page) => page.file.name, 'asc')
+      .sortInPlace((page) => page.file.name, 'asc')
       .map((page) => [
         dv.paragraph(dv.fileLink(page.file.name)),
         dv.paragraph(page.parents.length ? page.parents : null),
         dv.paragraph(page['source-link'] || null),
         dv.paragraph(page.done ? '`true`' : '`false`'),
       ]);
-    if (records.length)
-      dv.table(['**Inquiry**', '**Parents**', '**Source Link**', '**Done**'], records);
+    if (records.length) dv.table(['Inquiry', 'Parents', 'Source Link', 'Done'], records);
     else dv.paragraph(`*No inquiries found under \`${note['source-key']}\`*`);
   }
 }
@@ -51,20 +50,17 @@ export function showSiblingPractice(dv) {
           !pageSchemas.practicePageSchema.validate(page).error &&
           page['source-key'] === note['source-key'],
       )
-      .sort((page) => page.file.name, 'asc')
+      .sortInPlace((page) => page.file.name, 'asc')
       .map((page) => [
         dv.paragraph(dv.fileLink(page.file.name)),
         dv.paragraph(page.parents.length ? page.parents : null),
         dv.paragraph(page['source-link'] || null),
-        dv.paragraph(page['one-or-many'] ? `\`${page['one-or-many']}\`` : null),
+        dv.paragraph(`\`${page['one-or-many']}\``),
         dv.paragraph(page.done ? '`true`' : '`false`'),
       ]);
     if (records.length)
-      dv.table(
-        ['**Practice**', '**Parents**', '**Source Link**', '**One-or-many**', '**Done**'],
-        records,
-      );
-    else dv.paragraph(`**No inquiries found under \`${note['source-key']}\`**`);
+      dv.table(['Practice', 'Parents', 'Source Link', 'One-or-many', 'Done'], records);
+    else dv.paragraph(`*No practice found under \`${note['source-key']}\`*`);
   }
 }
 
@@ -77,23 +73,24 @@ export function showSiblingFormals(dv) {
   const note = dv.current();
   const { error } = pageSchemas.formalPageSchema.validate(note);
   if (error) dv.paragraph(`*Invalid formal: ${error.message}*`);
+  else if (!note.parents.length) dv.paragraph('*No sibling formals found.*');
   else {
     const records = dv
       .pages('#formal')
       .filter((page) => {
         if (pageSchemas.formalPageSchema.validate(page).error) return false;
-        const pageParentPaths = new Set(page.parents.map((link) => link.path));
+        const parentPaths = new Set(page.parents.map((link) => link.path));
         return (
-          note.parents.length == pageParentPaths.size &&
-          note.parents.every((link) => pageParentPaths.has(link.path))
+          note.parents.length == parentPaths.size &&
+          note.parents.every((link) => parentPaths.has(link.path))
         );
       })
       .map((page) => [
         dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
-        dv.paragraph(page.type ? `\`${page.type}\`` : null),
-        dv.paragraph(page.tags[1] || null),
+        dv.paragraph(`\`${page.type}\``),
+        dv.paragraph(page.tags[1]),
       ]);
-    if (records.length) dv.table(['**Formal**', '**Type**', '**Status**'], records);
+    if (records.length) dv.table(['Formal', 'Type', 'Status'], records);
     else dv.paragraph('*No sibling formals found.*');
   }
 }
@@ -118,15 +115,18 @@ export function showDescendantInformals(dv) {
   else {
     const records = dv
       .pages('#informal')
-      .where((page) => !pageSchemas.informalPageSchema.validate(page).error)
+      .where(
+        (page) =>
+          !pageSchemas.informalPageSchema.validate(page).error &&
+          page.parents.some((link) => link.path === note.file.path),
+      )
       .map((page) => [
         dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
         dv.paragraph(page.parents),
         dv.paragraph(page['formal-id'] ? `\`${page['formal-id']}\`` : null),
-        dv.paragraph(page.tags?.[1] || null),
+        dv.paragraph(page.tags[1]),
       ]);
-    if (records.length)
-      dv.table(['**Informal**', '**Parents**', '**Formal ID**', '**Status**'], records);
+    if (records.length) dv.table(['Informal', 'Parents', 'Formal ID', 'Status'], records);
     else dv.paragraph('*No descendant informals found.*');
   }
 }
@@ -137,6 +137,7 @@ export function showDescendantInformals(dv) {
  * @returns {void}
  */
 export function showDescendantFormals(dv) {
+  // FIXME: Returns results that have no parents.
   const note = dv.current();
   const { error } = pageSchemas.informalPageSchema.validate(note);
   if (error) dv.paragraph(`*Invalid informal: ${error.message}*`);
@@ -151,11 +152,10 @@ export function showDescendantFormals(dv) {
       .map((page) => [
         dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
         dv.paragraph(page.parents),
-        dv.paragraph(page.type ? `\`${page.type}\`` : null),
-        dv.paragraph(page.tags[1] || null),
+        dv.paragraph(`\`${page.type}\``),
+        dv.paragraph(page.tags[1]),
       ]);
-    if (records.length)
-      dv.table(['**Formal**', '**Parents**', '**Type**', '**Status**'], records);
+    if (records.length) dv.table(['Formal', 'Parents', 'Type', 'Status'], records);
     else dv.paragraph('*No descendant formals found.*');
   }
 }
@@ -180,9 +180,9 @@ export function showDescendantThoughts(dv) {
       .map((page) => [
         dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
         dv.paragraph(page.parents),
-        dv.paragraph(page.tags[1] || null),
+        dv.paragraph(page.tags[1]),
       ]);
-    if (records.length) dv.table(['**Thought**', '**Parents**', '**Status**'], records);
+    if (records.length) dv.table(['Thought', 'Parents', 'Status'], records);
     else dv.paragraph('*No descendant thoughts found.*');
   }
 }
@@ -211,7 +211,7 @@ export function showOuterCommentsAndQuestions(dv) {
       )
       .map(({ text }) => [text, dv.sectionLink(name, section, false, alias || name)]);
   });
-  if (records.length) dv.table(['**Comment/Question**', '**Origin**'], records);
+  if (records.length) dv.table(['Comment/Question', 'Origin'], records);
   else dv.paragraph('*No outer comments or questions found.*');
 }
 
@@ -239,6 +239,6 @@ export function showOuterTasks(dv) {
       )
       .map(({ text }) => [text, dv.sectionLink(name, section, false, alias || name)]);
   });
-  if (records.length) dv.table(['**Task**', '**Origin**'], records);
+  if (records.length) dv.table(['Task', 'Origin'], records);
   else dv.paragraph('*No outer tasks found.*');
 }

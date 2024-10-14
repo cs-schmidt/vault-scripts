@@ -9,7 +9,7 @@ const DateTime = getAPI().luxon.DateTime;
 
 /**
  * Show unresolved inquiries: they have invalid metadata or are not done.
- * @param {DataviewInlineAPI} dv - Dataview's inline API.
+ * @param {DataviewInlineAPI} dv Dataview's inline API.
  * @returns {void}
  */
 export function showUnresolvedInquiries(dv) {
@@ -29,153 +29,97 @@ export function showUnresolvedInquiries(dv) {
         dv.paragraph(page['source-link'] || null),
       ]);
   });
+  const invalidHeaders = ['Inquiry', 'Error'];
+  const pendingHeaders = ['Inquiry', 'Source Key', 'Source Link'];
   if (invalids.length && pendings.length) {
-    dv.table(['**Inquiry**', '**Error**'], invalids);
-    dv.table(['**Inquiry**', '**Source Key**', '**Source Link**'], pendings);
-  } else if (invalids.length) dv.table(['**Inquiry**', '**Error**'], invalids);
-  else if (pendings.length)
-    dv.table(['**Inquiry**', '**Source Key**', '**Source Link**'], pendings);
+    dv.table(invalidHeaders, invalids);
+    dv.table(pendingHeaders, pendings);
+  } else if (invalids.length) dv.table(invalidHeaders, invalids);
+  else if (pendings.length) dv.table(pendingHeaders, pendings);
   else dv.span('*No unresolved inquiries found.*');
 }
 
 /**
- * Show unresolved practice entries: they have invalid metadata or are not done.
- * @param {DataviewInlineAPI} dv - Dataview's inline API.
+ * Show unresolved informals and formals: they have invalid metadata or are
+ * underdeveloped.
+ * @param {DataviewInlineAPI} dv Dataview's inline API.
  * @returns {void}
  */
-export function showUnresolvedPractice(dv) {
+export function showAllUnresolvedConcepts(dv) {
   const invalids = [];
   const pendings = [];
-  dv.pages('#practice').forEach((page) => {
-    const { error } = pageSchemas.practicePageSchema.validate(page);
+  dv.pages('#informal OR #formal').forEach((page) => {
+    const isInformal = page.tags[0] === '#informal';
+    const typeColumn = isInformal ? '`#informal`' : `\`#formal - ${page.type}\``;
+    const { error } = isInformal
+      ? pageSchemas.informalPageSchema.validate(page)
+      : pageSchemas.formalPageSchema.validate(page);
     if (error)
       invalids.push([
         dv.paragraph(dv.fileLink(page.file.name)),
-        dv.paragraph(error.message),
-      ]);
-    else if (!page.done)
-      pendings.push([
-        dv.paragraph(dv.fileLink(page.file.name)),
-        dv.paragraph(page['source-key'] ? `\`${page['source-key']}\`` : null),
-        dv.paragraph(page['source-link'] || null),
-        dv.paragraph(page['one-or-many']),
-      ]);
-  });
-  if (invalids.length && pendings.length) {
-    dv.table(['**Practice**', '**Error**'], invalids);
-    dv.table(
-      ['**Practice**', '**Source Key**', '**Source Link**', '**One-or-many**'],
-      pendings,
-    );
-  } else if (invalids.length) dv.table(['**Practice**', '**Error**'], invalids);
-  else if (pendings.length)
-    dv.table(
-      ['**Practice**', '**Source Key**', '**Source Link**', '**One-or-many**'],
-      pendings,
-    );
-  else dv.span('*No unresolved practice entries found.*');
-}
-
-/**
- * Show unresolved informal entries: they have invalid metadata or are underdeveloped.
- * @param {DataviewInlineAPI} dv - Dataview's inline API.
- * @returns {void}
- */
-export function showUnresolvedInformals(dv) {
-  const invalids = [];
-  const pendings = [];
-  dv.pages('#informal').forEach((page) => {
-    const { error } = pageSchemas.informalPageSchema.validate(page);
-    if (error)
-      invalids.push([
-        dv.paragraph(dv.fileLink(page.file.name)),
+        dv.paragraph(typeColumn),
         dv.paragraph(error.message),
       ]);
     else if (['🌰', '🌱'].includes(page.tags[1]))
       pendings.push([
         dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
-        dv.paragraph(page['formal-id'] ? `\`${page['formal-id']}\`` : null),
+        dv.paragraph(typeColumn),
+        dv.paragraph(page.parents.length ? page.parents : null),
         dv.paragraph(page.tags[1]),
       ]);
   });
+  const invalidHeaders = ['Entry', 'Type', 'Error'];
+  const pendingHeaders = ['Entry', 'Type', 'Parents', 'Status'];
   if (invalids.length && pendings.length) {
-    dv.table(['**Informal**', '**Error**'], invalids);
-    dv.table(['**Informal**', '**Formal ID**', '**Status**'], pendings);
-  } else if (invalids.length) dv.table(['**Informal**', '**Error**'], invalids);
-  else if (pendings.length)
-    dv.table(['**Informal**', '**Formal ID**', '**Status**'], pendings);
-  else dv.span('*No unresolved informals found.*');
+    dv.table(invalidHeaders, invalids);
+    dv.table(pendingHeaders, pendings);
+  } else if (invalids.length) dv.table(invalidHeaders, invalids);
+  else if (pendings.length) dv.table(pendingHeaders, pendings);
+  else dv.span('*No unresolved informals or formals found.*');
 }
 
 /**
- * Show unresolved unprovable formals: they have invalid metadata or are underdeveloped.
- * @param {DataviewInlineAPI} dv - Dataview's inline API.
+ * Show unresolved practice and provable formals: they have invalid metadata or are not
+ * done/proven.
+ * @param {DataviewInlineAPI} dv Dataview's inline API.
  * @returns {void}
  */
-export function showUnresolvedUnprovableFormals(dv) {
+export function showAllUnresolvedPractice(dv) {
   const invalids = [];
   const pendings = [];
-  dv.pages('#formal')
-    .filter(({ type }) => type === 'definition')
-    .forEach((page) => {
-      const { error } = pageSchemas.formalPageSchema.validate(page);
-      if (error)
-        invalids.push([
-          dv.paragraph(dv.fileLink(page.file.name)),
-          dv.paragraph(error.message),
-        ]);
-      else if (['🌰', '🌱'].includes(page.tags[1]))
-        pendings.push([
-          dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
-          dv.paragraph(`\`${page.type}\``),
-          dv.paragraph(page.tags[1]),
-        ]);
-    });
+  dv.pages('#practice OR #formal').forEach((page) => {
+    const isPractice = page.tags[0] === '#practice';
+    const typeColumn = isPractice ? '`#practice`' : `\`#formal - ${page.type}\``;
+    const { error } = isPractice
+      ? pageSchemas.practicePageSchema.validate(page)
+      : pageSchemas.formalPageSchema.validate(page);
+    if (error)
+      invalids.push([
+        dv.paragraph(dv.fileLink(page.file.name)),
+        dv.paragraph(typeColumn),
+        dv.paragraph(error.message),
+      ]);
+    else if (!page.done && !page.proved)
+      pendings.push([
+        dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
+        dv.paragraph(typeColumn),
+        dv.paragraph(page.parents.length ? page.parents : null),
+        dv.paragraph(`\`${isPractice ? page['one-or-many'] : 'one'}\``),
+      ]);
+  });
+  const invalidHeaders = ['Entry', 'Type', 'Error'];
+  const pendingHeaders = ['Entry', 'Type', 'Parents', 'One-or-many'];
   if (invalids.length && pendings.length) {
-    dv.table(['**Formal**', '**Error**'], invalids);
-    dv.table(['**Formal**', '**Type**', '**Status**'], pendings);
-  } else if (invalids.length) dv.table(['**Formal**', '**Error**'], invalids);
-  else if (pendings.length) dv.table(['**Formal**', '**Type**', '**Status**'], pendings);
-  else dv.span('*No unresolved unprovable formals found.*');
-}
-
-/**
- * Show unresolved provable formals: they have invalid metadata or are underdeveloped.
- * @param {DataviewInlineAPI} dv - Dataview's inline API.
- * @returns {void}
- */
-export function showUnresolvedProvableFormals(dv) {
-  const invalids = [];
-  const pendings = [];
-  dv.pages('#formal')
-    .filter(({ type }) => ['theorem', 'lemma', 'proposition'].includes(type))
-    .forEach((page) => {
-      const { error } = pageSchemas.formalPageSchema.validate(page);
-      if (error)
-        invalids.push([
-          dv.paragraph(dv.fileLink(page.file.name)),
-          dv.paragraph(error.message),
-        ]);
-      else if (!page.proved)
-        pendings.push([
-          dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
-          dv.paragraph(`\`${page.type}\``),
-          dv.paragraph(page.tags[1]),
-          dv.paragraph(page.proved),
-        ]);
-    });
-  if (invalids.length && pendings.length) {
-    dv.table(['**Formal**', '**Error**'], invalids);
-    dv.table(['**Formal**', '**Type**', '**Status**', '**Proved**'], pendings);
-  } else if (invalids.length) dv.table(['**Formal**', '**Error**'], invalids);
-  else if (pendings.length)
-    dv.table(['**Formal**', '**Type**', '**Status**', '**Proved**'], pendings);
-  else dv.span('*No unresolved provable formals found.*');
+    dv.table(invalidHeaders, invalids);
+    dv.table(pendingHeaders, pendings);
+  } else if (invalids.length) dv.table(invalidHeaders, invalids);
+  else if (pendings.length) dv.table(pendingHeaders, pendings);
+  else dv.span('*No unresolved practice or provable formals found.*');
 }
 
 /**
  * Show unresolved thoughts: they have invalid metadata or are underdeveloped.
- * @param {DataviewInlineAPI} dv - Dataview's inline API.
+ * @param {DataviewInlineAPI} dv Dataview's inline API.
  * @returns {void}
  */
 export function showUnresolvedThoughts(dv) {
@@ -184,28 +128,29 @@ export function showUnresolvedThoughts(dv) {
   dv.pages('#thought').forEach((page) => {
     const { error } = pageSchemas.thoughtPageSchema.validate(page);
     if (error)
-      if (error)
-        invalids.push([
-          dv.paragraph(dv.fileLink(page.file.name)),
-          dv.paragraph(error.message),
-        ]);
-      else if (['🌰', '🌱'].includes(page.tags[1]))
-        pendings.push([
-          dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
-          dv.paragraph(page.tags[1]),
-        ]);
+      invalids.push([
+        dv.paragraph(dv.fileLink(page.file.name)),
+        dv.paragraph(error.message),
+      ]);
+    else if (['🌰', '🌱'].includes(page.tags[1]))
+      pendings.push([
+        dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
+        dv.paragraph(page.tags[1]),
+      ]);
   });
+  const invalidHeaders = ['Thought', 'Error'];
+  const pendingHeaders = ['Thought', 'Status'];
   if (invalids.length && pendings.length) {
-    dv.table(['**Thought**', '**Error**'], invalids);
-    dv.table(['**Thought**', '**Status**'], pendings);
-  } else if (invalids.length) dv.table(['**Thought**', '**Error**'], invalids);
-  else if (pendings.length) dv.table(['**Thought**', '**Status**'], pendings);
+    dv.table(invalidHeaders, invalids);
+    dv.table(pendingHeaders, pendings);
+  } else if (invalids.length) dv.table(invalidHeaders, invalids);
+  else if (pendings.length) dv.table(pendingHeaders, pendings);
   else dv.span('*No unresolved thoughts found.*');
 }
 
 /**
  * Show log entries.
- * @param {DataviewInlineAPI} dv - Dataview's inline API.
+ * @param {DataviewInlineAPI} dv Dataview's inline API.
  * @param {number} limit
  * @returns {void}
  */
@@ -229,10 +174,146 @@ export function showLogs(dv, limit = Infinity) {
       dv.paragraph(link),
       dv.paragraph(`\`${date.toLocaleString(DateTime.DATETIME_MED_WITH_WEEKDAY)}\``),
     ]);
+  const invalidHeaders = ['Log', 'Error'];
+  const pendingHeaders = ['Log', 'Date'];
   if (invalids.length && recents.length) {
-    dv.table(['**Log**', '**Error**'], invalids);
-    dv.table(['**Log**', '**Date**'], recents);
-  } else if (invalids.length) dv.table(['**Log**', '**Error**'], invalids);
-  else if (recents.length) dv.table(['**Log**', '**Date**'], recents);
+    dv.table(invalidHeaders, invalids);
+    dv.table(pendingHeaders, recents);
+  } else if (invalids.length) dv.table(invalidHeaders, invalids);
+  else if (recents.length) dv.table(pendingHeaders, recents);
   else dv.span('*No unresolved logs found.*');
+}
+
+/**
+ * Show unresolved practice entries: they have invalid metadata or are not done.
+ * @param {DataviewInlineAPI} dv Dataview's inline API.
+ * @returns {void}
+ */
+export function showUnresolvedPractice(dv) {
+  const invalids = [];
+  const pendings = [];
+  dv.pages('#practice').forEach((page) => {
+    const { error } = pageSchemas.practicePageSchema.validate(page);
+    if (error)
+      invalids.push([
+        dv.paragraph(dv.fileLink(page.file.name)),
+        dv.paragraph(error.message),
+      ]);
+    else if (!page.done)
+      pendings.push([
+        dv.paragraph(dv.fileLink(page.file.name)),
+        dv.paragraph(page['source-key'] ? `\`${page['source-key']}\`` : null),
+        dv.paragraph(page['source-link'] || null),
+        dv.paragraph(`\`${page['one-or-many']}\``),
+      ]);
+  });
+  const invalidHeaders = ['Practice', 'Error'];
+  const pendingHeaders = ['Practice', 'Source Key', 'Source Link', 'One-or-many'];
+  if (invalids.length && pendings.length) {
+    dv.table(invalidHeaders, invalids);
+    dv.table(pendingHeaders, pendings);
+  } else if (invalids.length) dv.table(invalidHeaders, invalids);
+  else if (pendings.length) dv.table(pendingHeaders, pendings);
+  else dv.span('*No unresolved practice entries found.*');
+}
+
+/**
+ * Show unresolved informal entries: they have invalid metadata or are underdeveloped.
+ * @param {DataviewInlineAPI} dv Dataview's inline API.
+ * @returns {void}
+ */
+export function showUnresolvedInformals(dv) {
+  const invalids = [];
+  const pendings = [];
+  dv.pages('#informal').forEach((page) => {
+    const { error } = pageSchemas.informalPageSchema.validate(page);
+    if (error)
+      invalids.push([
+        dv.paragraph(dv.fileLink(page.file.name)),
+        dv.paragraph(error.message),
+      ]);
+    else if (['🌰', '🌱'].includes(page.tags[1]))
+      pendings.push([
+        dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
+        dv.paragraph(page['formal-id'] ? `\`${page['formal-id']}\`` : null),
+        dv.paragraph(page.tags[1]),
+      ]);
+  });
+  const invalidHeaders = ['Informal', 'Error'];
+  const pendingHeaders = ['Informal', 'Formal ID', 'Status'];
+  if (invalids.length && pendings.length) {
+    dv.table(invalidHeaders, invalids);
+    dv.table(pendingHeaders, pendings);
+  } else if (invalids.length) dv.table(invalidHeaders, invalids);
+  else if (pendings.length) dv.table(pendingHeaders, pendings);
+  else dv.span('*No unresolved informals found.*');
+}
+
+/**
+ * Show unresolved unprovable formals: they have invalid metadata or are underdeveloped.
+ * @param {DataviewInlineAPI} dv Dataview's inline API.
+ * @returns {void}
+ */
+export function showUnresolvedUnprovableFormals(dv) {
+  const invalids = [];
+  const pendings = [];
+  dv.pages('#formal')
+    .filter(({ type }) => type === 'definition')
+    .forEach((page) => {
+      const { error } = pageSchemas.formalPageSchema.validate(page);
+      if (error)
+        invalids.push([
+          dv.paragraph(dv.fileLink(page.file.name)),
+          dv.paragraph(error.message),
+        ]);
+      else if (['🌰', '🌱'].includes(page.tags[1]))
+        pendings.push([
+          dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
+          dv.paragraph(`\`${page.type}\``),
+          dv.paragraph(page.tags[1]),
+        ]);
+    });
+  const invalidHeaders = ['Formal', 'Error'];
+  const pendingHeaders = ['Formal', 'Type', 'Status'];
+  if (invalids.length && pendings.length) {
+    dv.table(invalidHeaders, invalids);
+    dv.table(pendingHeaders, pendings);
+  } else if (invalids.length) dv.table(invalidHeaders, invalids);
+  else if (pendings.length) dv.table(pendingHeaders, pendings);
+  else dv.span('*No unresolved unprovable formals found.*');
+}
+
+/**
+ * Show unresolved provable formals: they have invalid metadata or are underdeveloped.
+ * @param {DataviewInlineAPI} dv Dataview's inline API.
+ * @returns {void}
+ */
+export function showUnresolvedProvableFormals(dv) {
+  const invalids = [];
+  const pendings = [];
+  dv.pages('#formal')
+    .filter(({ type }) => ['theorem', 'lemma', 'proposition'].includes(type))
+    .forEach((page) => {
+      const { error } = pageSchemas.formalPageSchema.validate(page);
+      if (error)
+        invalids.push([
+          dv.paragraph(dv.fileLink(page.file.name)),
+          dv.paragraph(error.message),
+        ]);
+      else if (!page.proved)
+        pendings.push([
+          dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
+          dv.paragraph(`\`${page.type}\``),
+          dv.paragraph(page.tags[1]),
+          dv.paragraph(page.proved),
+        ]);
+    });
+  const invalidHeaders = ['Formal', 'Error'];
+  const pendingHeaders = ['Formal', 'Type', 'Status', 'Proved'];
+  if (invalids.length && pendings.length) {
+    dv.table(invalidHeaders, invalids);
+    dv.table(pendingHeaders, pendings);
+  } else if (invalids.length) dv.table(invalidHeaders, invalids);
+  else if (pendings.length) dv.table(pendingHeaders, pendings);
+  else dv.span('*No unresolved provable formals found.*');
 }

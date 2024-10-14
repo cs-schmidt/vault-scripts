@@ -6,12 +6,12 @@ import { getAPI } from 'obsidian-dataview';
 const isDate = getAPI().value.isDate;
 
 export const inquiryPageSchema = Joi.object({
-  tags: metadataSchemas.makeNonStatusTagsSchema('inquiry'),
+  tags: metadataSchemas.makeTagsSchema('inquiry'),
   parents: metadataSchemas.parentsSchema,
   'source-key': Joi.string()
     .allow('')
     .custom((value, { state, error }) => {
-      if (!isValidSourceKey(value) || value == '*') return error('any.invalid');
+      if (!isValidSourceKey(value) || value == '$') return error('any.invalid');
       const title = state.ancestors[0]?.file?.name;
       const titleSourceKey = parseSourceKey(typeof title == 'string' ? title : '');
       if (!titleSourceKey) return error('page.noTitleSourceKey');
@@ -32,7 +32,7 @@ export const inquiryPageSchema = Joi.object({
   .unknown();
 
 export const practicePageSchema = Joi.object({
-  tags: metadataSchemas.makeNonStatusTagsSchema('practice'),
+  tags: metadataSchemas.makeTagsSchema('practice'),
   parents: metadataSchemas.parentsSchema,
   'source-key': Joi.string()
     .allow('')
@@ -63,7 +63,7 @@ export const practicePageSchema = Joi.object({
   .unknown();
 
 export const informalPageSchema = Joi.object({
-  tags: metadataSchemas.makeStatusedTagsSchema('informal'),
+  tags: metadataSchemas.makeTagsSchema('informal', false),
   aliases: metadataSchemas.aliasesSchema,
   parents: metadataSchemas.parentsSchema,
   'formal-id': Joi.string()
@@ -81,7 +81,7 @@ export const informalPageSchema = Joi.object({
   .unknown();
 
 export const formalPageSchema = Joi.object({
-  tags: metadataSchemas.makeStatusedTagsSchema('formal'),
+  tags: metadataSchemas.makeTagsSchema('formal', false),
   aliases: metadataSchemas.aliasesSchema,
   parents: metadataSchemas.parentsSchema,
   type: Joi.string().equal('definition', 'theorem', 'lemma', 'proposition').messages({
@@ -106,7 +106,7 @@ export const formalPageSchema = Joi.object({
   .unknown();
 
 export const thoughtPageSchema = Joi.object({
-  tags: metadataSchemas.makeStatusedTagsSchema('thought'),
+  tags: metadataSchemas.makeTagsSchema('thought', false),
   aliases: metadataSchemas.aliasesSchema,
   parents: metadataSchemas.parentsSchema,
 })
@@ -114,7 +114,7 @@ export const thoughtPageSchema = Joi.object({
   .unknown();
 
 export const logPageSchema = Joi.object({
-  tags: metadataSchemas.makeNonStatusTagsSchema('log'),
+  tags: metadataSchemas.makeTagsSchema('log'),
   aliases: metadataSchemas.aliasesSchema,
   date: Joi.custom((value, { error }) => {
     if (!isDate(value)) return error('string.base');
