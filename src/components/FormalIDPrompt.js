@@ -1,27 +1,17 @@
 import { Modal } from 'obsidian';
-import { isValidFormalID } from '../utils/helpers';
+import { fetchFormalIDs, isValidFormalID } from '../utils/helpers';
 
 // NOTE: Obsidian scrubs the DOM using the DOMPurify package, so there's limited ability
 //       to add  custom elements: You'll need use Obsidian's API to get the most control.
 
-// TODO: Add validation for FormalIDPrompt's constructor parameter.
+// TODO: Add validation for constructor parameter.
+// TODO: Style ID box members as inline code in pill labels.
 
 /** A modal that helps the user narrow down available formal IDs. */
 export default class FormalIDPrompt extends Modal {
-  static getFormalIDs() {
-    return new Set(
-      app.vault
-        .getMarkdownFiles()
-        .filter((file) => file.parent.name === 'entries')
-        .map((file) => app.metadataCache.getFileCache(file).frontmatter?.['formal-id'])
-        .filter((formalID) => formalID != undefined)
-        .sort(),
-    );
-  }
-
   #asyncFuncs = null;
   #submitted = false;
-  #formalIDs = FormalIDPrompt.getFormalIDs();
+  #formalIDs = new Set(fetchFormalIDs().sort());
   #idBoxEl = null;
   #value = '';
 
@@ -69,7 +59,6 @@ export default class FormalIDPrompt extends Modal {
 
   #updateState(inputEvent) {
     this.#value = inputEvent.target.value;
-    // Toggle classes on the input for valid, invalid, and empty states.
     if (this.#hasAvailableID()) {
       inputEvent.target.classList.add('fid-prompt__input--valid');
       inputEvent.target.classList.remove('fid-prompt__input--invalid');
@@ -80,18 +69,23 @@ export default class FormalIDPrompt extends Modal {
       inputEvent.target.classList.remove('fid-prompt__input--valid');
       inputEvent.target.classList.remove('fid-prompt__input--invalid');
     }
-    // Filter formal IDs that match the input and display them.
-    const filteredIDElements = this.#filterFormalIDs().map((id) => {
-      const idElement = document.createElement('span');
-      idElement.textContent = id;
-      return idElement;
-    });
-    this.#idBoxEl.innerHTML = '';
-    this.#idBoxEl.append(...filteredIDElements);
+    this.#populateIDBox();
   }
 
   #hasAvailableID() {
     return isValidFormalID(this.#value) && !this.#formalIDs.has(this.#value);
+  }
+
+  #populateIDBox() {
+    this.#idBoxEl.innerHTML = '';
+    if (this.#value) {
+      const idLabels = this.#filterFormalIDs().map((id) => {
+        const idLabel = document.createElement('span');
+        idLabel.textContent = id;
+        return idLabel;
+      });
+      this.#idBoxEl.append(...idLabels);
+    }
   }
 
   #filterFormalIDs() {

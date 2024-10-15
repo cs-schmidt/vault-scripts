@@ -6,7 +6,7 @@ import {
   SOURCE_KEY_PARSE_REGEX,
   FORMAL_ID_REGEX,
 } from './constants';
-import { FormalIDPrompt } from '../components';
+import { FormalIDPrompt, SourceKeyPrompt } from '../components';
 
 /**
  * Requests an open title for the template from the user.
@@ -39,6 +39,18 @@ export async function requestPathTitle(tp) {
  */
 export async function requestFormalID() {
   return new Promise((resolve, reject) => new FormalIDPrompt({ resolve, reject }).open());
+}
+
+/**
+ * Generates a prompt to request a source key from the user.
+ * @param {boolean} noSourceless Allows the sourceless key ($) to be a valid option.
+ * @returns {Promise<string>}
+ * @throws {string} Throws an error message when the prompt is cancelled.
+ */
+export async function requestSourceKey(noSourceless = true) {
+  return new Promise((resolve, reject) =>
+    new SourceKeyPrompt({ resolve, reject }, noSourceless).open(),
+  );
 }
 
 /**
@@ -87,14 +99,24 @@ export function parseSourceKey(title) {
 }
 
 /**
- * Check if `fileTitle` is unique under the "entries/" folder.
- * @param {string} [fileTitle='']
+ * Check if `title` is unique under the "entries/" folder.
+ * @param {string} [title='']
  * @returns {boolean}
  */
-export function isUniqueEntry(fileTitle = '') {
+export function isUniqueEntry(title = '') {
+  return app.vault.getMarkdownFiles().every((file) => file.path != `entries/${title}.md`);
+}
+
+/**
+ * Finds all source keys and returns them in an array.
+ * @returns {string[]}
+ */
+export function fetchSourceKeys() {
   return app.vault
     .getMarkdownFiles()
-    .every((file) => file.path != `entries/${fileTitle}.md`);
+    .filter((file) => file.parent.name === 'entries')
+    .map((file) => app.metadataCache.getFileCache(file).frontmatter?.['source-key'])
+    .filter(isValidSourceKey);
 }
 
 /**
@@ -104,11 +126,8 @@ export function isUniqueEntry(fileTitle = '') {
 export function fetchFormalIDs() {
   return app.vault
     .getMarkdownFiles()
-    .map(
-      (file) =>
-        file.parent.name === 'entries' &&
-        app.metadataCache.getFileCache(file).frontmatter?.['formal-id'],
-    )
+    .filter((file) => file.parent.name === 'entries')
+    .map((file) => app.metadataCache.getFileCache(file).frontmatter?.['formal-id'])
     .filter(isValidFormalID);
 }
 
