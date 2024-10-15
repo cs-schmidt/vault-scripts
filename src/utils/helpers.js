@@ -6,6 +6,7 @@ import {
   SOURCE_KEY_PARSE_REGEX,
   FORMAL_ID_REGEX,
 } from './constants';
+import { FormalIDPrompt } from '../components';
 
 /**
  * Requests an open title for the template from the user.
@@ -29,6 +30,15 @@ export async function requestPathTitle(tp) {
   const title = (await tp.system.prompt('Path Title:', '', true)).trim();
   if (!isValidPathTitle(title)) throw Error('Creation Error: Invalid path title.');
   return title;
+}
+
+/**
+ * Generates a prompt to request a formal ID from the user.
+ * @returns {Promise<string>}
+ * @throws {string} Throws an error message when the prompt is cancelled.
+ */
+export async function requestFormalID() {
+  return new Promise((resolve, reject) => new FormalIDPrompt({ resolve, reject }).open());
 }
 
 /**
