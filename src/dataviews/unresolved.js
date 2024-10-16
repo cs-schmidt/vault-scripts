@@ -258,7 +258,7 @@ export function showUnresolvedUnprovableFormals(dv) {
   const invalids = [];
   const pendings = [];
   dv.pages('#formal')
-    .filter(({ type }) => type === 'definition')
+    .where(({ type }) => type === 'definition')
     .forEach((page) => {
       const { error } = pageSchemas.formalPageSchema.validate(page);
       if (error)
@@ -292,7 +292,7 @@ export function showUnresolvedProvableFormals(dv) {
   const invalids = [];
   const pendings = [];
   dv.pages('#formal')
-    .filter(({ type }) => ['theorem', 'lemma', 'proposition'].includes(type))
+    .where(({ type }) => ['theorem', 'lemma', 'proposition'].includes(type))
     .forEach((page) => {
       const { error } = pageSchemas.formalPageSchema.validate(page);
       if (error)

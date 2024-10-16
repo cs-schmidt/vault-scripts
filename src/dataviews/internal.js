@@ -77,7 +77,7 @@ export function showSiblingFormals(dv) {
   else {
     const records = dv
       .pages('#formal')
-      .filter((page) => {
+      .where((page) => {
         if (pageSchemas.formalPageSchema.validate(page).error) return false;
         const parentPaths = new Set(page.parents.map((link) => link.path));
         return (
@@ -201,12 +201,12 @@ export function showOuterCommentsAndQuestions(dv) {
     const name = page.file.name;
     const alias = page.file.aliases?.[0];
     const list = page.file.lists;
-    list
-      .filter(
+    return list
+      .where(
         (listItem) =>
           !listItem.task &&
           listItem.section.subpath.trim() == section &&
-          listItem.outlinks.some((link) => link.path == name),
+          listItem.outlinks.some((link) => link.path == file.name),
       )
       .map(({ text }) => [text, dv.sectionLink(name, section, false, alias || name)]);
   });
@@ -229,12 +229,12 @@ export function showOuterTasks(dv) {
     const name = page.file.name;
     const alias = page.file.aliases?.[0];
     const list = page.file.lists;
-    list
-      .filter(
+    return list
+      .where(
         (listItem) =>
           listItem.task &&
           listItem.section.subpath.trim() == section &&
-          listItem.outlinks.some((link) => link.path == name),
+          listItem.outlinks.some((link) => link.path == file.name),
       )
       .map(({ text }) => [text, dv.sectionLink(name, section, false, alias || name)]);
   });
