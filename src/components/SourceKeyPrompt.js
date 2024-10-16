@@ -1,5 +1,6 @@
 import { FuzzySuggestModal } from 'obsidian';
 import { fetchSourceKeys, isValidSourceKey } from '../utils/helpers';
+import { SOURCELESS_KEY } from '../utils/constants';
 
 // NOTE: Obsidian scrubs the DOM using the DOMPurify package, so there's limited ability
 //       to add  custom elements: You'll need use Obsidian's API to get the most control.
@@ -18,8 +19,8 @@ export default class SourceKeyPrompt extends FuzzySuggestModal {
     super(app);
     if (asyncFuncs && typeof asyncFuncs == 'object') this.#asyncFuncs = asyncFuncs;
     const sourceKeySet = new Set(fetchSourceKeys());
-    if (noSourceless) sourceKeySet.delete('$');
-    else sourceKeySet.add('$');
+    if (noSourceless) sourceKeySet.delete(SOURCELESS_KEY);
+    else sourceKeySet.add(SOURCELESS_KEY);
     this.#sourceKeys = Array.from(sourceKeySet);
   }
 
@@ -53,7 +54,7 @@ export default class SourceKeyPrompt extends FuzzySuggestModal {
 
   onClose() {
     if (!this.#submitted && this.#asyncFuncs?.reject)
-      this.#asyncFuncs.reject('Prompt cancelled');
+      this.#asyncFuncs.reject('Source key prompt cancelled');
   }
 
   getItems() {

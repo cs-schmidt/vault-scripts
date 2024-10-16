@@ -1,6 +1,7 @@
 import Joi from 'joi';
 import * as metadataSchemas from './metadata';
-import { isValidSourceKey, parseSourceKey, isValidFormalID } from '../utils/helpers';
+import { isValidFormalID } from '../utils/helpers';
+import { FORMAL_TYPES, PROVABLE_FORMAL_TYPES } from '../utils/constants';
 import { getAPI } from 'obsidian-dataview';
 
 const isDate = getAPI().value.isDate;
@@ -8,23 +9,7 @@ const isDate = getAPI().value.isDate;
 export const inquiryPageSchema = Joi.object({
   tags: metadataSchemas.makeTagsSchema('inquiry'),
   parents: metadataSchemas.parentsSchema,
-  'source-key': Joi.string()
-    .allow('')
-    .custom((value, { state, error }) => {
-      if (!isValidSourceKey(value) || value == '$') return error('any.invalid');
-      const title = state.ancestors[0]?.file?.name;
-      const titleSourceKey = parseSourceKey(typeof title == 'string' ? title : '');
-      if (!titleSourceKey) return error('page.noTitleSourceKey');
-      if (titleSourceKey != value) return error('page.sourceKeyMismatch');
-      return value;
-    })
-    .messages({
-      'string.base': '`source-key` is not a string.',
-      'any.invalid': '`source-key` is not a valid string.',
-      'any.required': '`source-key` is missing.',
-      'page.noTitleSourceKey': 'Cannot get title source key.',
-      'page.sourceKeyMismatch': '`source-key` mismatch.',
-    }),
+  'source-key': metadataSchemas.makeSourceKeySchema(),
   'source-link': metadataSchemas.sourceLinkSchema,
   done: metadataSchemas.doneSchema,
 })
@@ -34,23 +19,7 @@ export const inquiryPageSchema = Joi.object({
 export const practicePageSchema = Joi.object({
   tags: metadataSchemas.makeTagsSchema('practice'),
   parents: metadataSchemas.parentsSchema,
-  'source-key': Joi.string()
-    .allow('')
-    .custom((value, { state, error }) => {
-      if (!isValidSourceKey(value)) return error('any.invalid');
-      const title = state.ancestors[0]?.file?.name;
-      const titleSourceKey = parseSourceKey(typeof title == 'string' ? title : '');
-      if (!titleSourceKey) return error('page.noTitleSourceKey');
-      if (titleSourceKey != value) return error('page.titleSourceKeyMismatch');
-      return value;
-    })
-    .messages({
-      'string.base': '`source-key` is not a string.',
-      'any.invalid': '`source-key` is not a valid string.',
-      'any.required': '`source-key` is missing.',
-      'page.noTitleSourceKey': 'Cannot find title source key.',
-      'page.sourceKeyMismatch': '`source-key` mismatch.',
-    }),
+  'source-key': metadataSchemas.makeSourceKeySchema(false),
   'source-link': metadataSchemas.sourceLinkSchema,
   'one-or-many': Joi.string().equal('one', 'many').messages({
     'string.base': '`one-or-many` is not a string.',
@@ -68,9 +37,7 @@ export const informalPageSchema = Joi.object({
   parents: metadataSchemas.parentsSchema,
   'formal-id': Joi.string()
     .allow('')
-    .custom((value, { error }) =>
-      value && !isValidFormalID(value) ? error('any.only') : value,
-    )
+    .custom((id, { error }) => (!isValidFormalID(id) ? error('any.only') : id))
     .messages({
       'string.base': '`formal-id` is not a string.',
       'any.only': '`formal-id` is not a valid string.',
@@ -84,14 +51,16 @@ export const formalPageSchema = Joi.object({
   tags: metadataSchemas.makeTagsSchema('formal', false),
   aliases: metadataSchemas.aliasesSchema,
   parents: metadataSchemas.parentsSchema,
-  type: Joi.string().equal('definition', 'theorem', 'lemma', 'proposition').messages({
-    'string.base': '`type` is not a string.',
-    'any.only': '`type` is not a valid string.',
-    'any.required': '`type` is missing.',
-  }),
+  type: Joi.string()
+    .equal(...FORMAL_TYPES)
+    .messages({
+      'string.base': '`type` is not a string.',
+      'any.only': '`type` is not a valid string.',
+      'any.required': '`type` is missing.',
+    }),
   proved: Joi.boolean()
     .when('type', {
-      is: Joi.string().equal('theorem', 'lemma', 'proposition'),
+      is: Joi.string().equal(...PROVABLE_FORMAL_TYPES),
       then: Joi.required(),
       otherwise: Joi.forbidden(),
     })

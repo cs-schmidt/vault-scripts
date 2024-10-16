@@ -1,10 +1,11 @@
 import Joi from 'joi';
+import { isValidBibtexKey, isValidSourceKey, parseSourceKey } from '../utils/helpers';
 import { getAPI } from 'obsidian-dataview';
 
 const isLink = getAPI().value.isLink;
 const httpUrlSchema = Joi.string().uri({ scheme: /https?/ });
 
-/** Schema for the aliases property on Dataview pages objects (SMarkdownPages). */
+/** Schema for the aliases property on Dataview page objects (SMarkdownPages). */
 export const aliasesSchema = Joi.array().items(Joi.string()).messages({
   'array.base': '`aliases` is not an array.',
   'string.base': '`aliases` has non-string value.',
@@ -12,7 +13,7 @@ export const aliasesSchema = Joi.array().items(Joi.string()).messages({
   'any.required': '`aliases` is missing.',
 });
 
-/** Schema for the parents property on Dataview pages objects (SMarkdownPages). */
+/** Schema for the parents property on Dataview page objects (SMarkdownPages). */
 export const parentsSchema = Joi.array()
   .custom((parents, { error }) => {
     const isInvalid = parents.some((value) => {
@@ -30,7 +31,7 @@ export const parentsSchema = Joi.array()
     'any.required': '`parents` is missing.',
   });
 
-/** Schema for the source-link property on Dataview pages objects (SMarkdownPages). */
+/** Schema for the source-link property on Dataview page objects (SMarkdownPages). */
 export const sourceLinkSchema = Joi.alternatives(Joi.string().allow(''), Joi.object())
   .custom((sourceLink, { error }) => {
     if (typeof sourceLink == 'object' && !isLink(sourceLink))
@@ -53,7 +54,7 @@ export const sourceLinkSchema = Joi.alternatives(Joi.string().allow(''), Joi.obj
     'any.required': '`source-link` is missing.',
   });
 
-/** Schema for the done property on Dataview pages objects (SMarkdownPages). */
+/** Schema for the done property on Dataview page objects (SMarkdownPages). */
 export const doneSchema = Joi.boolean().messages({
   'boolean.base': '`done` is not a boolean.',
   'any.required': '`done` is missing.',
@@ -85,4 +86,29 @@ export function makeTagsSchema(type, noStatus = true) {
           'array.orderedLength': '`tags` must contain two values only.',
           'any.only': `\`tags\` must contain '#${type}' and a status (🌰, 🌱, 🌿, 🌲).`,
         });
+}
+
+/**
+ * Creates a schema for the source-key property on Dataview page objects (SMarkdownPages).
+ * @param {boolean} noSourceless Allows the sourceless key as an option.
+ */
+export function makeSourceKeySchema(noSourceless = true) {
+  const isValid = noSourceless ? isValidBibtexKey : isValidSourceKey;
+  return Joi.string()
+    .allow('')
+    .custom((sourceKey, { state, error }) => {
+      if (!isValid(sourceKey)) return error('any.invalid');
+      const title = state.ancestors[0]?.file?.name;
+      const titleSourceKey = parseSourceKey(typeof title == 'string' ? title : '');
+      if (!titleSourceKey) return error('page.noTitleSourceKey');
+      if (titleSourceKey != sourceKey) return error('page.sourceKeyMismatch');
+      return sourceKey;
+    })
+    .messages({
+      'string.base': '`source-key` is not a string.',
+      'any.invalid': '`source-key` is not a valid string.',
+      'any.required': '`source-key` is missing.',
+      'page.noTitleSourceKey': 'Cannot get title source key.',
+      'page.sourceKeyMismatch': '`source-key` mismatch.',
+    });
 }

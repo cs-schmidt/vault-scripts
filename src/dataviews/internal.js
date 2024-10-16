@@ -137,7 +137,6 @@ export function showDescendantInformals(dv) {
  * @returns {void}
  */
 export function showDescendantFormals(dv) {
-  // FIXME: Returns results that have no parents.
   const note = dv.current();
   const { error } = pageSchemas.informalPageSchema.validate(note);
   if (error) dv.paragraph(`*Invalid informal: ${error.message}*`);

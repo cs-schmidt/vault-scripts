@@ -3,9 +3,13 @@ import {
   requestOpenTitle,
   requestPathTitle,
   isUniqueEntry,
-  parseSourceKey,
   capitalize,
 } from '../utils/helpers';
+import {
+  UNPROVABLE_FORMAL_TYPES,
+  PROVABLE_FORMAL_TYPES,
+  FORMAL_TYPES,
+} from '../utils/constants';
 
 // NOTE: New files in Obsidian are always initially named "Untitled".
 // NOTE: When "Show inline title" and "Show tab title bar" are turned off you'll see an
@@ -15,8 +19,7 @@ import {
  * The initialization function for the entry template.
  * @param {object} tp The Templater object.
  * @returns {string} The entry's content.
- * @throws {Error} Template selection is escaped or the chosen template's initialization
- *   threw an error
+ * @throws {Error} Template selection is escaped or the chosen template threw an error.
  */
 export async function initializeEntry(tp) {
   try {
@@ -28,7 +31,7 @@ export async function initializeEntry(tp) {
   } catch (error) {
     // Display the error and delete the target file.
     new Notice(error?.message || 'Something went wrong.');
-    // NOTE: You can't delete the target file before this function finishes execution:
+    // NOTE: The target file can't be deleted before this function finishes execution:
     //       Templater stalls in a "delete-create loop". As a "work around" `setTimeout()`
     //       is used with a closure around the target file reference, deleting the file
     //       after a small delay.
@@ -44,10 +47,8 @@ export async function initializeEntry(tp) {
  * @throws {Error} If any of the initialization steps throw an error.
  */
 export async function initializeInquiry(tp) {
-  const title = await requestPathTitle(tp);
-  if (!isUniqueEntry(title)) throw Error('Creation Error: Title is not unique.');
-  const sourceKey = parseSourceKey(title);
-  if (sourceKey == '$') throw Error('Creation Error: Invalid path title');
+  const { title, sourceKey } = await requestPathTitle(tp);
+  if (!isUniqueEntry(title)) throw Error('Title is not unique.');
   await tp.file.rename(title);
   return { sourceKey };
 }
@@ -59,10 +60,10 @@ export async function initializeInquiry(tp) {
  * @throws {Error} If any of the initialization steps throw an error.
  */
 export async function initializePractice(tp) {
-  const title = await requestPathTitle(tp);
-  if (!isUniqueEntry(title)) throw Error('Creation Error: Title is not unique.');
+  const { title, sourceKey } = await requestPathTitle(tp, false);
+  if (!isUniqueEntry(title)) throw Error('Title is not unique.');
   await tp.file.rename(title);
-  return { sourceKey: parseSourceKey(title), oneOrMany: await oneOrManyQuestions(tp) };
+  return { sourceKey, oneOrMany: await oneOrManyQuestions(tp) };
 
   // **************************************************
   async function oneOrManyQuestions(tp) {
@@ -83,7 +84,7 @@ export async function initializePractice(tp) {
  */
 export async function initializeInformal(tp) {
   const title = await requestOpenTitle(tp);
-  if (!isUniqueEntry(title)) throw Error('Creation Error: Title is not unique.');
+  if (!isUniqueEntry(title)) throw Error('Title is not unique.');
   await tp.file.rename(title);
 }
 
@@ -94,18 +95,13 @@ export async function initializeInformal(tp) {
  * @throws {Error} If any of the initialization steps throw an error.
  */
 export async function initializeFormal(tp) {
-  const unprovables = new Set(['definition']);
-  const provables = new Set(['theorem', 'lemma', 'proposition']);
-  const type = await tp.system.suggester(
-    capitalize,
-    Array.of(...unprovables, ...provables),
-    true,
-    'Formal Type:',
-  );
+  const type = await tp.system.suggester(capitalize, FORMAL_TYPES, true, 'Formal Type:');
+  const unprovables = new Set(UNPROVABLE_FORMAL_TYPES);
+  const provables = new Set(PROVABLE_FORMAL_TYPES);
   let title;
   if (unprovables.has(type) || !(await useAutoTitle(tp))) {
     title = await requestOpenTitle(tp);
-    if (!isUniqueEntry(title)) throw Error('Creation Error: Title is not unique.');
+    if (!isUniqueEntry(title)) throw Error('Title is not unique.');
   } else title = generateAutoTitle(type);
   await tp.file.rename(title);
   return { type: type };
@@ -140,7 +136,7 @@ export async function initializeFormal(tp) {
  */
 export async function initializeThought(tp) {
   const title = await requestOpenTitle(tp);
-  if (!isUniqueEntry(title)) throw Error('Creation Error: Title is not unique.');
+  if (!isUniqueEntry(title)) throw Error('Title is not unique.');
   await tp.file.rename(title);
 }
 
