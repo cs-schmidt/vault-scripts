@@ -1,15 +1,8 @@
 import { Notice, moment } from 'obsidian';
-import {
-  requestOpenTitle,
-  requestPathTitle,
-  isUniqueEntry,
-  capitalize,
-} from '../utils/helpers';
-import {
-  UNPROVABLE_FORMAL_TYPES,
-  PROVABLE_FORMAL_TYPES,
-  FORMAL_TYPES,
-} from '../utils/constants';
+import { requestOpenTitle, requestPathTitle } from '../utils/entries';
+import { isUniqueEntry, capitalize, fetchEntries } from '../utils/helpers';
+import { FORMAL_TYPES, PROVABLE_FORMAL_TYPES } from '../utils/constants';
+import { negate } from 'lodash-es';
 
 // NOTE: New files in Obsidian are always initially named "Untitled".
 // NOTE: When "Show inline title" and "Show tab title bar" are turned off you'll see an
@@ -71,7 +64,7 @@ export async function initializePractice(tp) {
       ['One', 'Many'],
       ['one', 'many'],
       true,
-      'Contains one or many questions?',
+      'Covers one or many questions?',
     );
   }
 }
@@ -96,35 +89,32 @@ export async function initializeInformal(tp) {
  */
 export async function initializeFormal(tp) {
   const type = await tp.system.suggester(capitalize, FORMAL_TYPES, true, 'Formal Type:');
-  const unprovables = new Set(UNPROVABLE_FORMAL_TYPES);
   const provables = new Set(PROVABLE_FORMAL_TYPES);
   let title;
-  if (unprovables.has(type) || !(await useAutoTitle(tp))) {
+  if (!provables.has(type) || !(await useAutoTitle(tp))) {
     title = await requestOpenTitle(tp);
     if (!isUniqueEntry(title)) throw Error('Title is not unique.');
   } else title = generateAutoTitle(type);
   await tp.file.rename(title);
-  return { type: type };
+  return { type };
 
   // **************************************************
   async function useAutoTitle(tp) {
     return tp.system.suggester(['Yes', 'No'], [true, false], true, 'Autogenerate title?');
   }
 
-  function generateAutoTitle(formalType) {
-    if (!provables.has(formalType)) throw Error('');
-    const typeInCapitals = capitalize(formalType);
-    const autoTitleRegex = new RegExp(`${typeInCapitals} \\$(0|[1-9]\\d*)`);
+  function generateAutoTitle(type) {
+    if (!provables.has(type)) throw Error("Non-provable types can't be auto-titled.");
+    const typeCapitalized = capitalize(type);
+    const autoTitleRegex = new RegExp(`^${typeCapitalized} \\$-(0|[1-9]\\d*)$`);
     const autoTitleCodes = new Set(
-      app.vault
-        .getMarkdownFiles()
-        .filter((file) => file.parent.name == 'entries')
+      fetchEntries()
         .map((file) => Number(file.basename.match(autoTitleRegex)?.[1]))
-        .filter((code) => !Number.isNaN(code)),
+        .filter(negate(Number.isNaN)),
     );
     let code = 0;
     while (autoTitleCodes.has(code)) code += 1;
-    return `${typeInCapitals} $${code}`;
+    return `${typeCapitalized} $-${code}`;
   }
 }
 

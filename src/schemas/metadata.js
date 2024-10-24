@@ -1,8 +1,11 @@
 import Joi from 'joi';
-import { isValidBibtexKey, isValidSourceKey, parseSourceKey } from '../utils/helpers';
-import { getAPI } from 'obsidian-dataview';
+import {
+  isValidBibtexKey,
+  isValidSourceKey,
+  parseSourceKeyPrefix,
+} from '../utils/entries';
+import is from '../utils/types';
 
-const isLink = getAPI().value.isLink;
 const httpUrlSchema = Joi.string().uri({ scheme: /https?/ });
 
 /** Schema for the aliases property on Dataview page objects (SMarkdownPages). */
@@ -17,7 +20,7 @@ export const aliasesSchema = Joi.array().items(Joi.string()).messages({
 export const parentsSchema = Joi.array()
   .custom((parents, { error }) => {
     const isInvalid = parents.some((value) => {
-      if (!isLink(value)) return true;
+      if (!is.link(value)) return true;
       const linkedNote = app.metadataCache.getCache(value.path);
       if (!linkedNote) return true;
       if (!linkedNote.frontmatter?.tags?.some((tag) => tag == '#informal' || tag == 'ℹ️'))
@@ -34,11 +37,10 @@ export const parentsSchema = Joi.array()
 /** Schema for the source-link property on Dataview page objects (SMarkdownPages). */
 export const sourceLinkSchema = Joi.alternatives(Joi.string().allow(''), Joi.object())
   .custom((sourceLink, { error }) => {
-    if (typeof sourceLink == 'object' && !isLink(sourceLink))
-      return error('object.invalid');
-    if (typeof sourceLink == 'string' && sourceLink) {
+    if (is.object(sourceLink) && !is.link(sourceLink)) return error('object.invalid');
+    if (is.string(sourceLink) && sourceLink) {
       const [display, URL] = sourceLink.match(/^\[(.*)\]\((.*)\)$/)?.slice(1) || [];
-      if (display == undefined) return error('string.invalid');
+      if (is.nullable(display)) return error('string.invalid');
       if (!display) return error('string.noDisplay');
       if (!URL) return error('string.noURL');
       if (httpUrlSchema.validate(URL).error) return error('string.noHTTP');
@@ -99,9 +101,9 @@ export function makeSourceKeySchema(noSourceless = true) {
     .custom((sourceKey, { state, error }) => {
       if (!isValid(sourceKey)) return error('any.invalid');
       const title = state.ancestors[0]?.file?.name;
-      const titleSourceKey = parseSourceKey(typeof title == 'string' ? title : '');
+      const titleSourceKey = parseSourceKeyPrefix(is.string(title) ? title : '');
       if (!titleSourceKey) return error('page.noTitleSourceKey');
-      if (titleSourceKey != sourceKey) return error('page.sourceKeyMismatch');
+      if (titleSourceKey !== sourceKey) return error('page.sourceKeyMismatch');
       return sourceKey;
     })
     .messages({

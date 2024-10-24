@@ -1,10 +1,8 @@
 import Joi from 'joi';
 import * as metadataSchemas from './metadata';
-import { isValidFormalID } from '../utils/helpers';
+import { isValidFormalID } from '../utils/entries';
 import { FORMAL_TYPES, PROVABLE_FORMAL_TYPES } from '../utils/constants';
-import { getAPI } from 'obsidian-dataview';
-
-const isDate = getAPI().value.isDate;
+import is from '../utils/types';
 
 export const inquiryPageSchema = Joi.object({
   tags: metadataSchemas.makeTagsSchema('inquiry'),
@@ -86,7 +84,7 @@ export const logPageSchema = Joi.object({
   tags: metadataSchemas.makeTagsSchema('log'),
   aliases: metadataSchemas.aliasesSchema,
   date: Joi.custom((value, { error }) => {
-    if (!isDate(value)) return error('string.base');
+    if (!is.date(value)) return error('string.base');
     value = value.toString();
     const { error: formatError } = Joi.string().isoDate().validate(value);
     if (formatError) return error('string.base');

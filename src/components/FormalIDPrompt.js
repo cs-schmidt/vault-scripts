@@ -1,5 +1,7 @@
 import { Modal } from 'obsidian';
-import { fetchFormalIDs, isValidFormalID } from '../utils/helpers';
+import { fetchFormalIDs } from '../utils/helpers';
+import { isValidFormalID } from '../utils/entries';
+import is from '../utils/types';
 
 // NOTE: Obsidian scrubs the DOM using the DOMPurify package, so there's limited ability
 //       to add  custom elements: You'll need use Obsidian's API to get the most control.
@@ -17,7 +19,7 @@ export default class FormalIDPrompt extends Modal {
 
   constructor(asyncFuncs) {
     super(app);
-    if (asyncFuncs && typeof asyncFuncs == 'object') this.#asyncFuncs = asyncFuncs;
+    if (is.object(asyncFuncs)) this.#asyncFuncs = asyncFuncs;
   }
 
   onOpen() {
@@ -44,7 +46,7 @@ export default class FormalIDPrompt extends Modal {
 
   onClose() {
     if (this.#submitted && this.#asyncFuncs?.reject)
-      this.#asyncFuncs.reject('Prompt cancelled');
+      this.#asyncFuncs.reject(new Error('Prompt cancelled'));
   }
 
   #trySubmission(keyboardEvent) {

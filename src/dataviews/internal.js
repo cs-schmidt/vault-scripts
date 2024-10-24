@@ -1,11 +1,12 @@
 import { pageSchemas } from '../schemas';
+import { isEmpty } from 'lodash-es';
 
 // NOTE: To access the full Dataview API you must pass the Dataview object as an argument.
 //       Using `app.plugins.plugins.dataview.api` provides the DataviewAPI object instead
 //       of the DataviewInlineAPI object.
 
 /**
- * Show all sibling inquiries.
+ * Show all sibling inquiries of an inquiry entry.
  * @param {DataviewInlineAPI} dv Dataview's inline API.
  * @returns {void}
  */
@@ -24,7 +25,7 @@ export async function showSiblingInquiries(dv) {
       .sortInPlace((page) => page.file.name, 'asc')
       .map((page) => [
         dv.paragraph(dv.fileLink(page.file.name)),
-        dv.paragraph(page.parents.length ? page.parents : null),
+        dv.paragraph(isEmpty(page.parents) ? null : page.parents),
         dv.paragraph(page['source-link'] || null),
         dv.paragraph(page.done ? '`true`' : '`false`'),
       ]);
@@ -34,7 +35,7 @@ export async function showSiblingInquiries(dv) {
 }
 
 /**
- * Show all sibling practice.
+ * Show all sibling practice of a practice entry.
  * @param {DataviewInlineAPI} dv Dataview's inline API.
  * @returns {void}
  */
@@ -53,7 +54,7 @@ export function showSiblingPractice(dv) {
       .sortInPlace((page) => page.file.name, 'asc')
       .map((page) => [
         dv.paragraph(dv.fileLink(page.file.name)),
-        dv.paragraph(page.parents.length ? page.parents : null),
+        dv.paragraph(isEmpty(page.parents) ? null : page.parents),
         dv.paragraph(page['source-link'] || null),
         dv.paragraph(`\`${page['one-or-many']}\``),
         dv.paragraph(page.done ? '`true`' : '`false`'),
@@ -65,7 +66,7 @@ export function showSiblingPractice(dv) {
 }
 
 /**
- * Shows all sibling formals.
+ * Shows all sibling formals or a formal entry.
  * @param {object} dv The Dataview object.
  * @returns {void}
  */
@@ -73,7 +74,7 @@ export function showSiblingFormals(dv) {
   const note = dv.current();
   const { error } = pageSchemas.formalPageSchema.validate(note);
   if (error) dv.paragraph(`*Invalid formal: ${error.message}*`);
-  else if (!note.parents.length) dv.paragraph('*No sibling formals found.*');
+  else if (isEmpty(note.parents)) dv.paragraph('*No sibling formals found.*');
   else {
     const records = dv
       .pages('#formal')
@@ -96,7 +97,7 @@ export function showSiblingFormals(dv) {
 }
 
 /**
- * Shows descendant informals.
+ * Shows descendant informals of an informal entry.
  * @param {object} dv The Dataview object.
  * @returns {void}
  */
@@ -132,7 +133,7 @@ export function showDescendantInformals(dv) {
 }
 
 /**
- * Shows all descendant formals.
+ * Shows all descendant formals of a formal entry.
  * @param {object} dv The Dataview object.
  * @returns {void}
  */
@@ -160,7 +161,7 @@ export function showDescendantFormals(dv) {
 }
 
 /**
- * Shows all descendant thoughts.
+ * Shows all descendant thoughts of an informal entry.
  * @param {object} dv The Dataview object.
  * @returns {void}
  */
@@ -186,6 +187,8 @@ export function showDescendantThoughts(dv) {
   }
 }
 
+// BUG: `showOuterCommentsAndQuestions()` will execute code Dataview queries attached to
+//      the text of a queried comment/question. Guard against this possiblity.
 /**
  * Shows "top-level" list items under the "Comments and Questions" section of other
  * entries which also contain a link to the current entry.
@@ -214,6 +217,8 @@ export function showOuterCommentsAndQuestions(dv) {
   else dv.paragraph('*No outer comments or questions found.*');
 }
 
+// BUG: `showOuterTasks()` will execute code Dataview queries attached to the text of a
+//      queried comment/question. Guard against this possiblity.
 /**
  * Shows "top-level" tasks under the "Tasks" section of other entries which also contain a
  * link to the current entry.

@@ -1,5 +1,5 @@
 import { Plugin, Notice } from 'obsidian';
-import { requestFormalID } from '../utils/helpers';
+import { requestFormalID } from '../utils/entries';
 
 /**
  * Sets up all commands on the plugin object.
@@ -7,8 +7,7 @@ import { requestFormalID } from '../utils/helpers';
  * @returns {void}
  */
 export function setupCommands(plugin) {
-  if (!(plugin instanceof Plugin))
-    throw TypeError('Cannot add commands to non-Plugin object.');
+  if (!(plugin instanceof Plugin)) throw TypeError('Commands added to non-plugin object');
 
   // Lets the user create and insert a formal ID into the editor.
   plugin.addCommand({
@@ -16,11 +15,9 @@ export function setupCommands(plugin) {
     id: 'vault-scripts__create-formal-id',
     editorCallback: async (editor) => {
       try {
-        const formalID = await requestFormalID();
-        const cursorPosition = editor.getCursor();
-        editor.replaceRange(formalID, cursorPosition);
-      } catch (errorMessage) {
-        new Notice(errorMessage);
+        editor.replaceRange(await requestFormalID(), editor.getCursor());
+      } catch (error) {
+        new Notice(error.message);
       }
     },
   });

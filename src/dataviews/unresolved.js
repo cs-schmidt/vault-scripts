@@ -1,10 +1,14 @@
 import { pageSchemas } from '../schemas';
 import { getAPI } from 'obsidian-dataview';
+import { isEmpty } from 'lodash-es';
+import { PROVABLE_FORMAL_TYPES, UNPROVABLE_FORMAL_TYPES } from '../utils/constants';
 
 // NOTE: To access the full Dataview API you must pass the Dataview object as an argument.
 //       Using `app.plugins.plugins.dataview.api` provides the DataviewAPI object instead
 //       of the DataviewInlineAPI object.
 
+const provables = new Set(PROVABLE_FORMAL_TYPES);
+const unprovables = new Set(UNPROVABLE_FORMAL_TYPES);
 const DateTime = getAPI().luxon.DateTime;
 
 /**
@@ -50,21 +54,21 @@ export function showAllUnresolvedConcepts(dv) {
   const pendings = [];
   dv.pages('#informal OR #formal').forEach((page) => {
     const isInformal = page.tags[0] === '#informal';
-    const typeColumn = isInformal ? '`#informal`' : `\`#formal - ${page.type}\``;
+    const type = isInformal ? '`#informal`' : `\`#formal - ${page.type}\``;
     const { error } = isInformal
       ? pageSchemas.informalPageSchema.validate(page)
       : pageSchemas.formalPageSchema.validate(page);
     if (error)
       invalids.push([
         dv.paragraph(dv.fileLink(page.file.name)),
-        dv.paragraph(typeColumn),
+        dv.paragraph(type),
         dv.paragraph(error.message),
       ]);
     else if (['🌰', '🌱'].includes(page.tags[1]))
       pendings.push([
         dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
-        dv.paragraph(typeColumn),
-        dv.paragraph(page.parents.length ? page.parents : null),
+        dv.paragraph(type),
+        dv.paragraph(isEmpty(page.parents) ? null : page.parents),
         dv.paragraph(page.tags[1]),
       ]);
   });
@@ -89,21 +93,21 @@ export function showAllUnresolvedPractice(dv) {
   const pendings = [];
   dv.pages('#practice OR #formal').forEach((page) => {
     const isPractice = page.tags[0] === '#practice';
-    const typeColumn = isPractice ? '`#practice`' : `\`#formal - ${page.type}\``;
+    const type = isPractice ? '`#practice`' : `\`#formal - ${page.type}\``;
     const { error } = isPractice
       ? pageSchemas.practicePageSchema.validate(page)
       : pageSchemas.formalPageSchema.validate(page);
     if (error)
       invalids.push([
         dv.paragraph(dv.fileLink(page.file.name)),
-        dv.paragraph(typeColumn),
+        dv.paragraph(type),
         dv.paragraph(error.message),
       ]);
     else if (!page.done && !page.proved)
       pendings.push([
         dv.paragraph(dv.fileLink(page.file.name, false, page.aliases?.[0])),
-        dv.paragraph(typeColumn),
-        dv.paragraph(page.parents.length ? page.parents : null),
+        dv.paragraph(type),
+        dv.paragraph(isEmpty(page.parents) ? null : page.parents),
         dv.paragraph(`\`${isPractice ? page['one-or-many'] : 'one'}\``),
       ]);
   });
@@ -258,7 +262,7 @@ export function showUnresolvedUnprovableFormals(dv) {
   const invalids = [];
   const pendings = [];
   dv.pages('#formal')
-    .where(({ type }) => type === 'definition')
+    .where(({ type }) => unprovables.has(type))
     .forEach((page) => {
       const { error } = pageSchemas.formalPageSchema.validate(page);
       if (error)
@@ -292,7 +296,7 @@ export function showUnresolvedProvableFormals(dv) {
   const invalids = [];
   const pendings = [];
   dv.pages('#formal')
-    .where(({ type }) => ['theorem', 'lemma', 'proposition'].includes(type))
+    .where(({ type }) => provables.has(type))
     .forEach((page) => {
       const { error } = pageSchemas.formalPageSchema.validate(page);
       if (error)

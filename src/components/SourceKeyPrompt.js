@@ -1,6 +1,8 @@
 import { FuzzySuggestModal } from 'obsidian';
-import { fetchSourceKeys, isValidSourceKey } from '../utils/helpers';
+import { fetchSourceKeys } from '../utils/helpers';
+import { isValidSourceKey } from '../utils/entries';
 import { SOURCELESS_KEY } from '../utils/constants';
+import is from '../utils/types';
 
 // NOTE: Obsidian scrubs the DOM using the DOMPurify package, so there's limited ability
 //       to add  custom elements: You'll need use Obsidian's API to get the most control.
@@ -17,7 +19,7 @@ export default class SourceKeyPrompt extends FuzzySuggestModal {
 
   constructor(asyncFuncs, noSourceless = true) {
     super(app);
-    if (asyncFuncs && typeof asyncFuncs == 'object') this.#asyncFuncs = asyncFuncs;
+    if (is.object(asyncFuncs)) this.#asyncFuncs = asyncFuncs;
     const sourceKeySet = new Set(fetchSourceKeys());
     if (noSourceless) sourceKeySet.delete(SOURCELESS_KEY);
     else sourceKeySet.add(SOURCELESS_KEY);
@@ -31,6 +33,11 @@ export default class SourceKeyPrompt extends FuzzySuggestModal {
     this.resultContainerEl.addClass('src-key-prompt__results');
     this.inputEl.addEventListener('keydown', this.#trySubmission.bind(this));
     this.inputEl.addEventListener('input', this.#updateState.bind(this));
+  }
+
+  onClose() {
+    if (!this.#submitted && this.#asyncFuncs?.reject)
+      this.#asyncFuncs.reject(new Error('Prompt cancelled'));
   }
 
   #trySubmission(keyboardEvent) {
@@ -50,11 +57,6 @@ export default class SourceKeyPrompt extends FuzzySuggestModal {
       this.inputEl.classList.remove('src-key-prompt__input--valid');
       this.inputEl.classList.remove('src-key-prompt__input--invalid');
     }
-  }
-
-  onClose() {
-    if (!this.#submitted && this.#asyncFuncs?.reject)
-      this.#asyncFuncs.reject('Source key prompt cancelled');
   }
 
   getItems() {

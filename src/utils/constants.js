@@ -2,6 +2,8 @@
 //       apostrophes. Characters in the parentheses cannot be used: (/\|:*?#<>[]").
 // NOTE: Ensure the BibTeX key format in Zotero and log date code prefixes don't overlap.
 
+import { capitalize } from './helpers';
+
 /** The sourceless key (see specification). */
 export const SOURCELESS_KEY = '_';
 
@@ -15,7 +17,7 @@ export const SOURCE_KEY_REGEX = new RegExp(
 );
 
 /** Matches SOURCE_KEY format string prefixes. */
-export const SOURCE_KEY_PARSE_REGEX = new RegExp(
+export const SOURCE_KEY_PREFIX_REGEX = new RegExp(
   `^\\{(${stripAnchors(SOURCE_KEY_REGEX.source)})\\}`,
 );
 
@@ -27,8 +29,8 @@ export const RESERVED_TITLE_REGEX = /^Untitled(?: (?:0|[1-9]\d*))?$/i;
 
 /** Matches OPEN_TITLE format strings (see specification). */
 export const OPEN_TITLE_REGEX = (() => {
-  const alphaClass = '[a-zA-Z]';
-  const alphanumClass = '[a-zA-Z\\d]';
+  const alphaClass = '[A-Za-z]';
+  const alphanumClass = '[A-Za-z\\d]';
   // Matches alphanumeric strings that can have periods and be possesive or contractive.
   const alphanumDotsAposMatch = [
     `${alphanumClass}+`,
@@ -75,6 +77,17 @@ export const FORMAL_TYPES = Array.of(
   ...UNPROVABLE_FORMAL_TYPES,
   ...PROVABLE_FORMAL_TYPES,
 );
+
+/** Matches FORMAL_AUTO_TITLE strings (see specification). */
+export const FORMAL_AUTO_TITLE_REGEX = (() => {
+  const typeMatch = `(?:${PROVABLE_FORMAL_TYPES.map(capitalize).join('|')})`;
+  const idMatch = stripAnchors(FORMAL_ID_REGEX.source);
+  const codeMatch = `(?:${[
+    `\\$-(?:0|[1-9]\\d*)`,
+    `${idMatch}(?:\\.${idMatch})*(?:\\.\\$)?-(?:0|[1-9]\\d*)`,
+  ].join('|')})`;
+  return new RegExp(`^${typeMatch} ${codeMatch}$`);
+})();
 
 /**
  * Strips the start and end regex anchors from a string.
