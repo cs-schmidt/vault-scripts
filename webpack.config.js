@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import CopyPlugin from 'copy-webpack-plugin';
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
-const buildPath = process.env['BUILD_PATH'];
+const outputPath = process.env['BUILD_PATH'];
 
 /** Webpack Configuration */
 export default {
@@ -12,20 +12,13 @@ export default {
   context: projectRoot,
   entry: './src/main.js',
   output: {
-    path: buildPath,
+    path: outputPath,
     filename: '[name].js',
-    libraryTarget: 'commonjs',
+    library: { type: 'commonjs2' },
     clean: true,
   },
   module: {
-    rules: [
-      {
-        test: /\.m?js$/,
-        resolve: {
-          fullySpecified: false,
-        },
-      },
-    ],
+    rules: [{ test: /\.m?js$/, resolve: { fullySpecified: false } }],
   },
   externals: ['obsidian'],
   plugins: [new CopyPlugin({ patterns: [{ from: 'manifest.json' }] })],
