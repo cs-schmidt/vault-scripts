@@ -1,8 +1,7 @@
 import { getAPI } from 'obsidian-dataview';
 
 const dataviewAPI = getAPI();
-
-export default {
+const is = {
   /**
    * Checks if the input is a Dataview date object. Internally, it checks if the input is
    * an instance of Luxon's DateTime class.
@@ -11,6 +10,15 @@ export default {
    */
   date(value) {
     return dataviewAPI.value.isDate(value);
+  },
+
+  /**
+   * Checks if the input is a function.
+   * @param {any} value
+   * @returns {boolean}
+   */
+  function(value) {
+    return typeof value == 'function';
   },
 
   /**
@@ -24,12 +32,21 @@ export default {
   },
 
   /**
+   * Checks if the input is a number primitive.
+   * @param {any} value
+   * @returns {boolean}
+   */
+  number(value) {
+    return typeof value == 'number';
+  },
+
+  /**
    * Checks if the input is a string primitive.
    * @param {any} value
    * @returns {boolean}
    */
   string(value) {
-    return typeof value === 'string';
+    return typeof value == 'string';
   },
 
   /**
@@ -38,6 +55,8 @@ export default {
    * @returns {boolean}
    */
   object(value) {
-    return value && typeof value === 'object';
+    return value && typeof value == 'object';
   },
 };
+
+export default is;

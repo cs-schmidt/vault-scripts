@@ -1,6 +1,5 @@
 import { Modal } from 'obsidian';
-import { fetchFormalIDs } from '../utils/helpers';
-import { isValidFormalID } from '../utils/entries';
+import { isValidFormalID, fetchFormalIDs } from '../utils/entries';
 import is from '../utils/types';
 
 // NOTE: Obsidian scrubs the DOM using the DOMPurify package, so there's limited ability

@@ -1,4 +1,4 @@
-import { FormalIDPrompt, SourceKeyPrompt } from '../components';
+import { ConfirmationModal, FormalIDPrompt, SourceKeyPrompt } from '../components';
 import {
   SOURCE_KEY_REGEX,
   SOURCE_TRAIL_MATCH,
@@ -10,6 +10,18 @@ import {
   FORMAL_ID_REGEX,
   FORMAL_AUTO_TITLE_REGEX,
 } from './constants';
+import { isEmpty } from 'lodash-es';
+import is from './types';
+
+/** @typedef {import('obsidian').TFile} TFile */
+
+/**
+ * Requests confirmation from the user.
+ * @returns {boolean}
+ */
+export async function requestConfirmation() {
+  return new Promise((resolve) => new ConfirmationModal(resolve).open());
+}
 
 /**
  * Requests a source key from the user.
@@ -140,4 +152,66 @@ export function isFormalAutoTitle(str) {
  */
 export function parseSourceKeyPrefix(title) {
   return title.match(SOURCE_KEY_PREFIX_REGEX)?.[1] || '';
+}
+
+/**
+ * Finds the code-class that corresponds to a list of parent links. Codes are only
+ * resolved from string links.
+ * @param {any[]} parents - The parent array of an entry.
+ * @returns {string};
+ */
+export function getCodeClassFromParents(parents) {
+  const resolvedIDs = new Set();
+  for (const value of parents) {
+    const name = parseNameFromLink(value);
+    if (name) {
+      const id = app.metadataCache.getCache(`entries/${name}.md`).frontmatter?.[
+        'formal-id'
+      ];
+      if (isValidFormalID(id) && !resolvedIDs.has(id)) resolvedIDs.add(id);
+    }
+  }
+  return !isEmpty(resolvedIDs) ? [...resolvedIDs].sort().join('.') : '$';
+
+  // **************************************************
+  function parseNameFromLink(str) {
+    return is.string(str) ? str.match(/^\[\[([^|]+).*\]\]$/)?.[1] || null : null;
+  }
+}
+
+/**
+ * Finds all markdown files under the "entries" folder and return them.
+ * @returns {TFile[]}
+ */
+export function fetchEntries() {
+  return app.vault.getMarkdownFiles().filter((file) => file.parent.path === 'entries');
+}
+
+/**
+ * Finds all source keys and returns them in an array.
+ * @returns {string[]}
+ */
+export function fetchSourceKeys() {
+  return fetchEntries()
+    .map((file) => app.metadataCache.getFileCache(file).frontmatter?.['source-key'])
+    .filter(isValidSourceKey);
+}
+
+/**
+ * Finds all formal IDs and returns them in an array.
+ * @returns {string[]}
+ */
+export function fetchFormalIDs() {
+  return fetchEntries()
+    .map((file) => app.metadataCache.getFileCache(file).frontmatter?.['formal-id'])
+    .filter(isValidFormalID);
+}
+
+/**
+ * Check if `title` is unique under the "entries/" folder.
+ * @param {string} [title='']
+ * @returns {boolean}
+ */
+export function isUniqueEntry(title = '') {
+  return app.vault.getMarkdownFiles().every((file) => file.path != `entries/${title}.md`);
 }

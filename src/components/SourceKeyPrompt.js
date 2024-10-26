@@ -1,6 +1,5 @@
 import { FuzzySuggestModal } from 'obsidian';
-import { fetchSourceKeys } from '../utils/helpers';
-import { isValidSourceKey } from '../utils/entries';
+import { isValidSourceKey, fetchSourceKeys } from '../utils/entries';
 import { SOURCELESS_KEY } from '../utils/constants';
 import is from '../utils/types';
 

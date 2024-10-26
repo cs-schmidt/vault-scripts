@@ -2,7 +2,7 @@
 //       apostrophes. Characters in the parentheses cannot be used: (/\|:*?#<>[]").
 // NOTE: Ensure the BibTeX key format in Zotero and log date code prefixes don't overlap.
 
-import { capitalize } from './helpers';
+import { capitalize } from 'lodash-es';
 
 /** The sourceless key (see specification). */
 export const SOURCELESS_KEY = '_';
@@ -73,19 +73,14 @@ export const UNPROVABLE_FORMAL_TYPES = ['definition'];
 export const PROVABLE_FORMAL_TYPES = ['theorem', 'lemma', 'proposition'];
 
 /** The list of all formal types. */
-export const FORMAL_TYPES = Array.of(
-  ...UNPROVABLE_FORMAL_TYPES,
-  ...PROVABLE_FORMAL_TYPES,
-);
+export const FORMAL_TYPES = [...UNPROVABLE_FORMAL_TYPES, ...PROVABLE_FORMAL_TYPES];
 
 /** Matches FORMAL_AUTO_TITLE strings (see specification). */
 export const FORMAL_AUTO_TITLE_REGEX = (() => {
   const typeMatch = `(?:${PROVABLE_FORMAL_TYPES.map(capitalize).join('|')})`;
   const idMatch = stripAnchors(FORMAL_ID_REGEX.source);
-  const codeMatch = `(?:${[
-    `\\$-(?:0|[1-9]\\d*)`,
-    `${idMatch}(?:\\.${idMatch})*(?:\\.\\$)?-(?:0|[1-9]\\d*)`,
-  ].join('|')})`;
+  const codeClassMatch = `(?:${idMatch}(?:\\.${idMatch})*|\\$)`;
+  const codeMatch = `${codeClassMatch}-(?:0|[1-9]\\d*)`;
   return new RegExp(`^${typeMatch} ${codeMatch}$`);
 })();
 

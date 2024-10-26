@@ -1,5 +1,6 @@
 import { Plugin, Notice } from 'obsidian';
 import { requestFormalID } from '../utils/entries';
+import updateFormalAutoTitles from './updateFormalAutoTitles';
 
 /**
  * Sets up all commands on the plugin object.
@@ -20,5 +21,12 @@ export function setupCommands(plugin) {
         new Notice(error.message);
       }
     },
+  });
+
+  // Lets the user update formal auto-titles.
+  plugin.addCommand({
+    name: 'Update formal auto-titles',
+    id: 'vault-scripts__update-formal-auto-titles',
+    callback: updateFormalAutoTitles,
   });
 }

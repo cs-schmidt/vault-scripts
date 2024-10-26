@@ -1,8 +1,12 @@
 import { Notice, moment } from 'obsidian';
-import { requestOpenTitle, requestPathTitle } from '../utils/entries';
-import { isUniqueEntry, capitalize, fetchEntries } from '../utils/helpers';
+import {
+  requestOpenTitle,
+  requestPathTitle,
+  isUniqueEntry,
+  fetchEntries,
+} from '../utils/entries';
 import { FORMAL_TYPES, PROVABLE_FORMAL_TYPES } from '../utils/constants';
-import { negate } from 'lodash-es';
+import { negate, capitalize } from 'lodash-es';
 
 // NOTE: New files in Obsidian are always initially named "Untitled".
 // NOTE: When "Show inline title" and "Show tab title bar" are turned off you'll see an
