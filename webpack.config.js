@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import CopyPlugin from 'copy-webpack-plugin';
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
@@ -13,13 +14,19 @@ export default {
   entry: './src/main.js',
   output: {
     path: outputPath,
-    filename: '[name].js',
+    filename: 'main.js',
     library: { type: 'commonjs2' },
     clean: true,
   },
   module: {
-    rules: [{ test: /\.m?js$/, resolve: { fullySpecified: false } }],
+    rules: [
+      { test: /\.m?js$/, resolve: { fullySpecified: false } },
+      { test: /\.css$/, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
+    ],
   },
   externals: ['obsidian'],
-  plugins: [new CopyPlugin({ patterns: [{ from: 'manifest.json' }] })],
+  plugins: [
+    new MiniCssExtractPlugin({ filename: 'styles.css' }),
+    new CopyPlugin({ patterns: [{ from: 'manifest.json' }] }),
+  ],
 };
