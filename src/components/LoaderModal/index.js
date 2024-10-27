@@ -1,5 +1,6 @@
 import { Modal } from 'obsidian';
-import is from '../utils/types';
+import is from '../../utils/types';
+import './index.css';
 
 /** A modal that indicates a loading event. */
 export default class LoaderModal extends Modal {

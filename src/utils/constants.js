@@ -13,7 +13,7 @@ export const BIBTEX_KEY_REGEX =
 
 /** Matches SOURCE_KEY format strings (see specification). */
 export const SOURCE_KEY_REGEX = new RegExp(
-  `(?:${SOURCELESS_KEY}|${stripAnchors(BIBTEX_KEY_REGEX.source)})`,
+  `^(?:${SOURCELESS_KEY}|${stripAnchors(BIBTEX_KEY_REGEX.source)})$`,
 );
 
 /** Matches SOURCE_KEY format string prefixes. */

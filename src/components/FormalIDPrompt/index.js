@@ -1,6 +1,7 @@
 import { Modal } from 'obsidian';
-import { isValidFormalID, fetchFormalIDs } from '../utils/entries';
-import is from '../utils/types';
+import { isValidFormalID, fetchFormalIDs } from '../../utils/entries';
+import is from '../../utils/types';
+import './index.css';
 
 // NOTE: Obsidian scrubs the DOM using the DOMPurify package, so there's limited ability
 //       to add  custom elements: You'll need use Obsidian's API to get the most control.
@@ -23,7 +24,7 @@ export default class FormalIDPrompt extends Modal {
 
   onOpen() {
     // Create and display prompt.
-    this.modalEl.id = 'fid-prompt';
+    this.modalEl.addClass('fid-prompt');
     this.titleEl.addClass('fid-prompt__title');
     this.titleEl.setText('Formal ID:');
     this.contentEl.addClass('fid-prompt__content');
@@ -31,7 +32,7 @@ export default class FormalIDPrompt extends Modal {
     this.#idBoxEl.addClass('fid-prompt__id-box');
     const inputEl = this.contentEl.createEl('input', {
       attr: {
-        class: 'fid-prompt__input fid-prompt__input--valid',
+        class: 'fid-prompt__input',
         type: 'text',
         placeholder: 'Enter formal ID.',
         maxLength: 4,

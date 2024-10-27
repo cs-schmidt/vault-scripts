@@ -13,7 +13,6 @@ import is from '../utils/types';
 const metadata = app.metadataCache;
 const provables = new Set(PROVABLE_FORMAL_TYPES);
 
-// TODO: Implement the "Update formal auto-titles" command.
 export default async function updateFormalAutoTitles() {
   const candidates = [];
   const issues = {};
@@ -40,7 +39,7 @@ export default async function updateFormalAutoTitles() {
     const renames = getRenameList(candidates);
     if (isEmpty(renames)) new Notice('No renames are required');
     else if (await requestConfirmation()) {
-      const loadingModal = new LoaderModal(2000);
+      const loadingModal = new LoaderModal(1000);
       loadingModal.open();
       const uid = generateUniqueFilenamePrefix();
       const initMap = renames.map(({ oldPath }, i) => [oldPath, `entries/${uid}${i}.md`]);
