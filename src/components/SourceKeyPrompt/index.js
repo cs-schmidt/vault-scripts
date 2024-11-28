@@ -46,8 +46,6 @@ export default class SourceKeyPrompt extends FuzzySuggestModal {
 
   #updateState(inputEvent) {
     this.#value = inputEvent.target.value;
-    console.log(this.#value);
-    console.log(isValidSourceKey(this.#value));
     if (isValidSourceKey(this.#value)) {
       this.inputEl.classList.add('src-key-prompt__input--valid');
       this.inputEl.classList.remove('src-key-prompt__input--invalid');
