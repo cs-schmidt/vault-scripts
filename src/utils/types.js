@@ -32,6 +32,15 @@ const is = {
   },
 
   /**
+   * Checks if the input is nullable (either null or undefined).
+   * @param {any} value
+   * @returns {boolean}
+   */
+  nullable(value) {
+    return value == undefined;
+  },
+
+  /**
    * Checks if the input is a number primitive.
    * @param {any} value
    * @returns {boolean}
